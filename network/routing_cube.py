@@ -14,6 +14,9 @@ class RoutingCube:
 
         self.incoming = Faces()
         self.outgoing = Faces()
-        
+
         # data stored in this cube for use by routing algorithms
         self.data = None
+        
+        # for use by simulator, not routing algorithms
+        self.ll_references = Faces()
