@@ -21,17 +21,23 @@ class NetGridPresenter(Model):
         node_positions = np.array(list(node_map.keys()), dtype=int)
 
         nodes = np.zeros((self.max_size,self.max_size,self.max_size))
-        nodes[node_positions] = 1
+        for x, y, z in node_positions:
+            nodes[x,y,z] = 1
+
         return nodes
     
 
     def next_state(self):
-        pass
+        # Step the grid
+        self.netgrid.step()
+        self.alert_observers()
 
 
     def prev_state(self):
-        pass
+        # TODO Currently no way to access previous state
+        self.alert_observers()
 
 
     def restart(self):
+        # TODO Currently no way to reset to initial state
         pass
