@@ -1,10 +1,11 @@
-from routing_cube import RoutingCube
-from faces import Direction
+from .routing_cube import RoutingCube
+from .faces import Direction
 from typing import Dict
+from routing_algorithms.routing_algorithm import RoutingAlgorithm
 
 # grid that uses 2d linked list approach
 class NetworkGrid:
-    def __init__(self) -> None:
+    def __init__(self, routing_algorithm: RoutingAlgorithm)-> None:
         # Contains pointers to one node in each z layer.
         # Should be the furthest north-west node in the layer.
         self.layer_entry_points: Dict[int, RoutingCube] = {}
@@ -14,15 +15,24 @@ class NetworkGrid:
         
         # Allows lookup of node by position
         self.node_map: Dict[tuple[int, int, int], RoutingCube] = {}
+        
+        # List of all nodes in the network
+        self.node_list = []
+        
+        self.routing_algorithm = routing_algorithm
     
     # Gets the requested node from the network.
     # Returns None if the node does not exist.
     def get_node(self, x: int, y: int, z: int) -> RoutingCube:
         return self.node_map.get((x, y, z), None)
         
-    def add_node(self, x: int, y: int, z: int, node: RoutingCube):
+    def add_node(self, x: int, y: int, z: int):
+        node = RoutingCube((x, y, z))
+
         # put it in the node_map
         self.node_map[(x, y, z)] = node
+    
+        self.node_list.append(node)
         
         # check if this layer exists
         if z not in self.layer_entry_points.keys():
@@ -47,36 +57,49 @@ class NetworkGrid:
         # z direction
         up = self.get_node(x, y, z+1)
         if up is not None:
-            up.set_face(Direction.DOWN, node.ll_references.get_face(Direction.UP))
-            node.set_face(Direction.UP, up.ll_references.get_face(Direction.DOWN))
+            up.ll_references.set_face(Direction.DOWN, node.faces.get_face(Direction.UP))
+            node.ll_references.set_face(Direction.UP, up.faces.get_face(Direction.DOWN))
         
         down = self.get_node(x, y, z-1)
         if down is not None:
-            down.set_face(Direction.UP, node.ll_references.get_face(Direction.DOWN))
-            node.set_face(Direction.DOWN, down.ll_references.get_face(Direction.UP))
+            down.ll_references.set_face(Direction.UP, node.faces.get_face(Direction.DOWN))
+            node.ll_references.set_face(Direction.DOWN, down.faces.get_face(Direction.UP))
         
         # y direction
         north = self.get_node(x, y+1, z)
         if north is not None:
-            north.set_face(Direction.SOUTH, node.ll_references.get_face(Direction.NORTH))
-            node.set_face(Direction.NORTH, north.ll_references.get_face(Direction.SOUTH))
+            north.ll_references.set_face(Direction.SOUTH, node.faces.get_face(Direction.NORTH))
+            node.ll_references.set_face(Direction.NORTH, north.faces.get_face(Direction.SOUTH))
             
         south = self.get_node(x, y-1, z)
         if south is not None:
-            south.set_face(Direction.NORTH, node.ll_references.get_face(Direction.SOUTH))
-            node.set_face(Direction.SOUTH, south.ll_references.get_face(Direction.NORTH))
+            south.ll_references.set_face(Direction.NORTH, node.faces.get_face(Direction.SOUTH))
+            node.ll_references.set_face(Direction.SOUTH, south.faces.get_face(Direction.NORTH))
             
         # x direction
         east = self.get_node(x+1, y, z)
         if east is not None:
-            east.set_face(Direction.WEST, node.ll_references.get_face(Direction.EAST))
-            node.set_face(Direction.EAST, east.ll_references.get_face(Direction.WEST))
+            east.ll_references.set_face(Direction.WEST, node.faces.get_face(Direction.EAST))
+            node.ll_references.set_face(Direction.EAST, east.faces.get_face(Direction.WEST))
             
         west = self.get_node(x-1, y, z)
         if west is not None:
-            west.set_face(Direction.EAST, node.ll_references.get_face(Direction.WEST))
-            node.set_face(Direction.WEST, west.ll_references.get_face(Direction.EAST))
+            west.ll_references.set_face(Direction.EAST, node.faces.get_face(Direction.WEST))
+            node.ll_references.set_face(Direction.WEST, west.faces.get_face(Direction.EAST))
         
+        # run power on code for the node
+        self.routing_algorithm.power_on(node)
+    
+    def remove_node(self, x: int, y: int, z: int):
+        # get the node
+        node = self.get_node(x, y, z)
+        if node is None:
+            return
+        
+        # remove it from the node map
+        self.node_map.pop((x, y, z))
+        
+        self.node_list.remove(node)
             
     # returns a 2d array of nodes in the requested z layer.
     # If there are no nodes in that layer, returns None.
@@ -114,3 +137,13 @@ class NetworkGrid:
             stack.append((x, y-1))
 
         return layer
+    
+    def get_all_nodes(self) -> list[RoutingCube]:
+        return self.node_list
+    
+    def step(self):
+        for node in self.node_list:
+            node.step(self.routing_algorithm)
+        
+        for node in self.node_list:
+            node.flush_buffers()
