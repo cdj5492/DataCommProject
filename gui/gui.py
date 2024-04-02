@@ -10,7 +10,7 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.widgets import Button
 
-from dummy_model import DummyNetSimulator, UNIVERSE_DIMENSIONS
+from model import Model
 from observer import Observer
 
 voxel_pos_t: typing.TypeAlias = tuple[int,int,int]
@@ -29,7 +29,7 @@ def init_matplotlib() -> tuple[Figure, typing.Any]:
 
 
 class PlotGUI(Observer):
-    def __init__(self, dimensions:tuple[int,int,int], model:typing.Any):
+    def __init__(self, dimensions:tuple[int,int,int], model:Model):
         self.dimensions = dimensions # Universe dimensions
         super().__init__(model)      # Connection with simulator
 
@@ -37,15 +37,15 @@ class PlotGUI(Observer):
 
         ax_prev_btn = self.fig.add_axes([0.7, 0.08, 0.15, 0.075]) # These axes define the button locations and sizes
         ax_next_btn = self.fig.add_axes([0.86, 0.08, 0.10, 0.075])
-        ax_run_btn = self.fig.add_axes([0.7, 0.0, 0.15, 0.075])
+        # ax_run_btn = self.fig.add_axes([0.7, 0.0, 0.15, 0.075])
 
         # Setup buttons
         self.btn_next = Button(ax_next_btn, "Next")
         self.btn_next.on_clicked(self.next)
         self.btn_prev = Button(ax_prev_btn, "Previous")
         self.btn_prev.on_clicked(self.prev)
-        self.btn_run = Button(ax_run_btn, "Run")
-        self.btn_run.on_clicked(self.run)
+        # self.btn_run = Button(ax_run_btn, "Run")
+        # self.btn_run.on_clicked(self.run)
     
 
     def plot_voxels(self, voxels:np.ndarray[voxel_pos_t]):
@@ -77,26 +77,28 @@ class PlotGUI(Observer):
         self._model.prev_state()
 
 
-    def run(self, event):
-        """
-        Step through all model states.
+    # def run(self, event):
+    #     """
+    #     Step through all model states.
 
-        :param event: unused
-        """
-        self._model.restart()
-        for _ in range(self._model.max_states - 1):
-            self._model.next_state()
+    #     :param event: unused
+    #     """
+    #     self._model.restart()
+    #     for _ in range(self._model.max_states - 1):
+    #         self._model.next_state()
 
 
     def update(self):
         """
         Plot the nodes in the model as voxels.
         """
-        vox_array = self._model.get_nodes() # Assume get_nodes() is a supported method
+        vox_array = self._model.get_nodes()
         self.plot_voxels(vox_array)
 
 
 if __name__ == "__main__":
+    from dummy_model import DummyNetSimulator, UNIVERSE_DIMENSIONS
+
     # Initialization
     model = DummyNetSimulator()
     ui = PlotGUI(UNIVERSE_DIMENSIONS, model)

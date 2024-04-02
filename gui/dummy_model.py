@@ -3,38 +3,21 @@
 
 import numpy as np
 
+from model import Model
 from observer import Observer
 
 UNIVERSE_SIZE = 8
 UNIVERSE_DIMENSIONS = (UNIVERSE_SIZE,UNIVERSE_SIZE,UNIVERSE_SIZE)
 
-class DummyNetSimulator:
+
+class DummyNetSimulator(Model):
     def __init__(self, max_states=10):
         self.max_states = max_states               # Maximum number of node states to track
         self.nodes = np.zeros(UNIVERSE_DIMENSIONS) # Node state
         self.idx = 0                               # Index associated with current node state
         self.node_states = list()                  # Sequence of past and present node states
         self.node_states.append(self.nodes)
-
-        self.observers = list()
-
-
-    def alert_observers(self):
-        """
-        Call the update() method of all this model's observers.
-        """
-        for obs in self.observers:
-            obs.update()
-
-
-    def add_observer(self, obs:Observer):
-        """
-        Add the given object to this model's observer list.
-
-        :param obs: observer
-        """
-        self.observers.append(obs)
-        self.alert_observers()
+        super().__init__()
 
     
     def get_nodes(self) -> np.ndarray[tuple[int,int,int]]:
