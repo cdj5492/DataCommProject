@@ -1,6 +1,6 @@
-from ..network.routing_cube import RoutingCube
-from ..network.faces import Direction
-from routing_algorithm import RoutingAlgorithm
+from network.routing_cube import RoutingCube
+from network.faces import Direction
+from .routing_algorithm import RoutingAlgorithm
 
 # example of how to use the RoutingAlgorithm class
 class Template(RoutingAlgorithm):
@@ -8,7 +8,7 @@ class Template(RoutingAlgorithm):
         pass
 
     # Template function for routing algorithms.
-    def route(cube: RoutingCube):
+    def route(self, cube: RoutingCube):
         # demo routing algorithm just takes the data coming into
         # each face and outputs to the opposite face
         
@@ -36,6 +36,6 @@ class Template(RoutingAlgorithm):
         return cube
     
     # do nothing when first powered on for this example
-    def power_on(self) -> None:
+    def power_on(self, cube: RoutingCube) -> None:
         pass
 

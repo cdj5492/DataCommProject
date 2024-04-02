@@ -1,4 +1,4 @@
-from ..network.routing_cube import RoutingCube, Faces
+from network.routing_cube import RoutingCube, Faces
 
 # Class that all routing algorithms must inherit from.
 class RoutingAlgorithm:
@@ -10,5 +10,5 @@ class RoutingAlgorithm:
         pass
     
     # Called once when this cube is first powered on.
-    def power_on(self) -> None:
+    def power_on(self, cube: RoutingCube) -> None:
         pass
