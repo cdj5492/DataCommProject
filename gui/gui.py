@@ -2,75 +2,105 @@
 https://matplotlib.org/stable/plot_types/3D/voxels_simple.html#sphx-glr-plot-types-3d-voxels-simple-py
 """
 
+import typing
+
 import matplotlib.pyplot as plt
 import numpy as np
 
+from matplotlib.figure import Figure
 from matplotlib.widgets import Button
 
-plt.style.use('_mpl-gallery')
+from dummy_model import DummyNetSimulator, UNIVERSE_DIMENSIONS
+from observer import Observer
 
-# Prepare some coordinates and the voxel boolean array
-universe_dimensions = (8,8,8)
-x, y, z = np.indices(universe_dimensions)
-voxels = np.zeros(universe_dimensions)
-
-# Define cubes (nodes)
-# cube1 = (x == 2) & (y == 2) & (z == 2)
-# cube2 = (x == 6) & (y == 6) & (z == 6)
-# cube3 = (x == 3) & (y == 2) & (z == 2)
-
-# Combine the objects into a single boolean array as a state
-# state1 = cube1 | cube2
-# state2 = state1 | cube3
-state1 = voxels.copy()
-state1[2,2,2] = 1
-state1[6,6,6] = 1
-state2 = state1.copy()
-state2[3,2,2] = 1
-
-# Sequence of network states
-net_states = np.array(
-    [state1, state2]
-)
-
-# Plot info
-fig, ax = plt.subplots(subplot_kw={"projection":"3d"})
+voxel_pos_t: typing.TypeAlias = tuple[int,int,int]
 
 
-class Index:
-    ind = 0
+def init_matplotlib() -> tuple[Figure, typing.Any]:
+    """
+    Matplotlib-related initialization.
+
+    :return: the principal figure and axis objects
+    """
+    plt.style.use('_mpl-gallery')
+    # Plot info
+    fig, ax = plt.subplots(subplot_kw={"projection":"3d"})
+    return fig, ax
+
+
+class PlotGUI(Observer):
+    def __init__(self, dimensions:tuple[int,int,int], model:typing.Any):
+        self.dimensions = dimensions # Universe dimensions
+        super().__init__(model)      # Connection with simulator
+
+        self.fig, self.ax = init_matplotlib() # Figure and axis for voxel array
+
+        ax_prev_btn = self.fig.add_axes([0.7, 0.08, 0.15, 0.075]) # These axes define the button locations and sizes
+        ax_next_btn = self.fig.add_axes([0.86, 0.08, 0.10, 0.075])
+        ax_run_btn = self.fig.add_axes([0.7, 0.0, 0.15, 0.075])
+
+        # Setup buttons
+        self.btn_next = Button(ax_next_btn, "Next")
+        self.btn_next.on_clicked(self.next)
+        self.btn_prev = Button(ax_prev_btn, "Previous")
+        self.btn_prev.on_clicked(self.prev)
+        self.btn_run = Button(ax_run_btn, "Run")
+        self.btn_run.on_clicked(self.run)
+    
+
+    def plot_voxels(self, voxels:np.ndarray[voxel_pos_t]):
+        """
+        Re-plot the main axis with the given voxel array.
+
+        :param voxels: _description_
+        """
+        self.ax.cla() # Clear main axis
+        self.ax.voxels(voxels, edgecolor='k') # Draw voxels on main axis
+        plt.draw()
+
 
     def next(self, event):
-        self.ind += 1
+        """
+        Advance the model to the next state.
 
-        i = self.ind % len(net_states)
-        ax.cla() # Clear main axis
-        ax.voxels(net_states[i], edgecolor='k') # Draw voxels on main axis
-        plt.draw()
+        :param event: unused
+        """
+        self._model.next_state()
+
 
     def prev(self, event):
-        self.ind -= 1
+        """
+        Advance the model to the previous state.
 
-        i = self.ind % len(net_states)
-        ax.cla()
-        ax.voxels(net_states[i], edgecolor='k')
-        plt.draw()
+        :param event: unused
+        """
+        self._model.prev_state()
 
 
-callback = Index()
-axprev = fig.add_axes([0.7, 0.05, 0.15, 0.075]) # These axes define the button locations and sizes
-axnext = fig.add_axes([0.86, 0.05, 0.1, 0.075])
+    def run(self, event):
+        """
+        Step through all model states.
 
-bnext = Button(axnext, 'Next')
-bnext.on_clicked(callback.next)
-bprev = Button(axprev, 'Previous')
-bprev.on_clicked(callback.prev)
+        :param event: unused
+        """
+        self._model.restart()
+        for _ in range(self._model.max_states - 1):
+            self._model.next_state()
 
-# Plot the initial state
-ax.voxels(net_states[0], edgecolor='k')
 
-# ax.set(xticklabels=[],
-#        yticklabels=[],
-#        zticklabels=[])
+    def update(self):
+        """
+        Plot the nodes in the model as voxels.
+        """
+        vox_array = self._model.get_nodes() # Assume get_nodes() is a supported method
+        self.plot_voxels(vox_array)
 
-plt.show()
+
+if __name__ == "__main__":
+    # Initialization
+    model = DummyNetSimulator()
+    ui = PlotGUI(UNIVERSE_DIMENSIONS, model)
+    model.add_observer(ui)
+
+    # Display window
+    plt.show()
