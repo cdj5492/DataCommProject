@@ -10,8 +10,7 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.widgets import Button
 
-from model import Model
-from observer import Observer
+from gui.utils import Model, Observer
 
 voxel_pos_t: typing.TypeAlias = tuple[int,int,int]
 
@@ -94,15 +93,3 @@ class PlotGUI(Observer):
         """
         vox_array = self._model.get_nodes()
         self.plot_voxels(vox_array)
-
-
-if __name__ == "__main__":
-    from dummy_model import DummyNetSimulator, UNIVERSE_DIMENSIONS
-
-    # Initialization
-    model = DummyNetSimulator()
-    ui = PlotGUI(UNIVERSE_DIMENSIONS, model)
-    model.add_observer(ui)
-
-    # Display window
-    plt.show()

@@ -1,9 +1,16 @@
-"""
+"""GUI Utility Classes
 """
 
 import numpy as np
 
-from observer import Observer
+
+class Observer:
+    def __init__(self, model):
+        self._model = model
+
+    def update(self):
+        raise NotImplementedError()
+
 
 class Model:
     def __init__(self):
@@ -14,7 +21,7 @@ class Model:
         """
         Call the update() method of all this model's observers.
         """
-        for obs in self.observers:
+        for obs in self._observers:
             obs.update()
 
 
@@ -24,7 +31,7 @@ class Model:
 
         :param obs: observer
         """
-        self.observers.append(obs)
+        self._observers.append(obs)
         self.alert_observers()
 
 

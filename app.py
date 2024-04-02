@@ -3,15 +3,16 @@
 
 import matplotlib.pyplot as plt
 
-from gui import PlotGUI
-from netgrid_model import NetGridPresenter
+from gui.gui import PlotGUI
+from gui.netgrid_model import NetGridPresenter
 from network.network_grid import NetworkGrid
+from routing_algorithms.template import Template
 
 UNIVERSE_DIMENSIONS = (8,8,8)
 
 
 def init_simulator() -> NetworkGrid:
-    return NetworkGrid()
+    return NetworkGrid(Template())
 
 
 def main():

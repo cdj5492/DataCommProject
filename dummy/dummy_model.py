@@ -3,8 +3,7 @@
 
 import numpy as np
 
-from model import Model
-from observer import Observer
+from gui.utils import Model
 
 UNIVERSE_SIZE = 8
 UNIVERSE_DIMENSIONS = (UNIVERSE_SIZE,UNIVERSE_SIZE,UNIVERSE_SIZE)
