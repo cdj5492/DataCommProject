@@ -1,4 +1,7 @@
-"""Test Entry Point
+"""Entry Point for GUI Test Using Dummy
+
+file: dummy_app.py
+author: Mark Danza
 """
 
 import matplotlib.pyplot as plt

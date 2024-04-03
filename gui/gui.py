@@ -1,4 +1,12 @@
-"""
+"""Network Simulator GUI
+
+file: gui.py
+author: Mark Danza
+
+Graphical user interface using matplotlib, loosely based on the model-view-controller
+framework.
+
+See example:
 https://matplotlib.org/stable/plot_types/3D/voxels_simple.html#sphx-glr-plot-types-3d-voxels-simple-py
 """
 
@@ -13,6 +21,7 @@ from matplotlib.widgets import Button
 from gui.utils import Model, Observer
 
 voxel_pos_t: typing.TypeAlias = tuple[int,int,int]
+"""Typemark for voxel coordinates."""
 
 
 def init_matplotlib() -> tuple[Figure, typing.Any]:
@@ -28,6 +37,10 @@ def init_matplotlib() -> tuple[Figure, typing.Any]:
 
 
 class PlotGUI(Observer):
+    """
+    GUI class.
+    """
+    
     def __init__(self, dimensions:tuple[int,int,int], model:Model):
         self.dimensions = dimensions # Universe dimensions
         super().__init__(model)      # Connection with simulator

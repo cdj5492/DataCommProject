@@ -1,4 +1,7 @@
-"""
+"""Fake Network Simulator Model for GUI Testing
+
+file: dummy_model.py
+author: Mark Danza
 """
 
 import numpy as np
@@ -10,6 +13,10 @@ UNIVERSE_DIMENSIONS = (UNIVERSE_SIZE,UNIVERSE_SIZE,UNIVERSE_SIZE)
 
 
 class DummyNetSimulator(Model):
+    """
+    Dummy model that generates and adds random nodes.
+    """
+
     def __init__(self, max_states=10):
         self.max_states = max_states               # Maximum number of node states to track
         self.nodes = np.zeros(UNIVERSE_DIMENSIONS) # Node state
@@ -19,16 +26,16 @@ class DummyNetSimulator(Model):
         super().__init__()
 
     
-    def get_node_positions(self) -> np.ndarray[tuple[int,int,int]]:
-        """
-        Get an array of the node coordinates.
-
-        :return: node positions
-        """
+    def get_node_positions(self) -> np.ndarray[int]:
         return self.nodes
     
 
     def get_node_facecolors(self) -> None:
+        """
+        Use default facecolors.
+
+        :return: None
+        """
         return None
     
 
@@ -71,7 +78,7 @@ class DummyNetSimulator(Model):
     
     def restart(self):
         """
-        Set the state to the initial state. Updates observers.
+        Set the active state to the initial state. Updates observers.
         """
         self.idx = 0
         self._update_state()

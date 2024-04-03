@@ -1,4 +1,9 @@
 """Entry point
+
+file: app.py
+author: Mark Danza
+
+Initializes and runs the network simulator and matplotlib GUI.
 """
 
 import matplotlib.pyplot as plt
