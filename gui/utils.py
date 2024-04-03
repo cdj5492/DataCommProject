@@ -35,7 +35,11 @@ class Model:
         self.alert_observers()
 
 
-    def get_nodes(self) -> np.ndarray[tuple[int,int,int]]:
+    def get_node_positions(self) -> np.ndarray[int]:
+        raise NotImplementedError()
+    
+
+    def get_node_facecolors(self) -> np.ndarray[str]:
         raise NotImplementedError()
 
 

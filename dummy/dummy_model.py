@@ -19,13 +19,17 @@ class DummyNetSimulator(Model):
         super().__init__()
 
     
-    def get_nodes(self) -> np.ndarray[tuple[int,int,int]]:
+    def get_node_positions(self) -> np.ndarray[tuple[int,int,int]]:
         """
         Get an array of the node coordinates.
 
         :return: node positions
         """
         return self.nodes
+    
+
+    def get_node_facecolors(self) -> None:
+        return None
     
 
     def _update_state(self):

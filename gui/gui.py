@@ -47,14 +47,14 @@ class PlotGUI(Observer):
         # self.btn_run.on_clicked(self.run)
     
 
-    def plot_voxels(self, voxels:np.ndarray[voxel_pos_t]):
+    def plot_voxels(self, voxels:np.ndarray[voxel_pos_t], facecolors=None):
         """
         Re-plot the main axis with the given voxel array.
 
         :param voxels: _description_
         """
         self.ax.cla() # Clear main axis
-        self.ax.voxels(voxels, edgecolor='k') # Draw voxels on main axis
+        self.ax.voxels(voxels, facecolors=facecolors, edgecolor='k') # Draw voxels on main axis
         plt.draw()
 
 
@@ -91,5 +91,6 @@ class PlotGUI(Observer):
         """
         Plot the nodes in the model as voxels.
         """
-        vox_array = self._model.get_nodes()
-        self.plot_voxels(vox_array)
+        vox_array = self._model.get_node_positions()
+        vox_colors = self._model.get_node_facecolors()
+        self.plot_voxels(vox_array, vox_colors)

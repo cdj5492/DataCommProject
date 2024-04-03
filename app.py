@@ -9,7 +9,7 @@ from network.faces import Direction
 from network.network_grid import NetworkGrid
 from routing_algorithms.template import Template
 
-UNIVERSE_DIMENSIONS = (8,8,8)
+UNIVERSE_DIMENSIONS = (3,3,3)
 
 
 def init_simulator() -> NetworkGrid:
@@ -31,7 +31,7 @@ def init_simulator() -> NetworkGrid:
 def main():
     # Initialization
     simulator = init_simulator()
-    model = NetGridPresenter(simulator)
+    model = NetGridPresenter(simulator, UNIVERSE_DIMENSIONS)
     ui = PlotGUI(UNIVERSE_DIMENSIONS, model)
     model.add_observer(ui)
 
