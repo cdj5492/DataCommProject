@@ -49,15 +49,15 @@ class PlotGUI(Observer):
 
         ax_prev_btn = self.fig.add_axes([0.7, 0.08, 0.15, 0.075]) # These axes define the button locations and sizes
         ax_next_btn = self.fig.add_axes([0.86, 0.08, 0.10, 0.075])
-        # ax_run_btn = self.fig.add_axes([0.7, 0.0, 0.15, 0.075])
+        ax_skip_to_end_btn = self.fig.add_axes([0.7, 0.0, 0.15, 0.075])
 
         # Setup buttons
         self.btn_next = Button(ax_next_btn, "Next")
         self.btn_next.on_clicked(self.next)
         self.btn_prev = Button(ax_prev_btn, "Previous")
         self.btn_prev.on_clicked(self.prev)
-        # self.btn_run = Button(ax_run_btn, "Run")
-        # self.btn_run.on_clicked(self.run)
+        self.btn_skip_to_end = Button(ax_skip_to_end_btn, "Skip to End")
+        self.btn_skip_to_end.on_clicked(self.skip_to_end)
     
 
     def plot_voxels(self, voxels:np.ndarray[voxel_pos_t], facecolors=None):
@@ -89,15 +89,13 @@ class PlotGUI(Observer):
         self._model.prev_state()
 
 
-    # def run(self, event):
-    #     """
-    #     Step through all model states.
+    def skip_to_end(self, event):
+        """
+        Restart and then step through all model states.
 
-    #     :param event: unused
-    #     """
-    #     self._model.restart()
-    #     for _ in range(self._model.max_states - 1):
-    #         self._model.next_state()
+        :param event: unused
+        """
+        self._model.skip_to_end()
 
 
     def update(self):

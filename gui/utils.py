@@ -113,6 +113,17 @@ class Model:
 
         REQUIREMENT: This method should call alert_observers() if it is used.
 
-        :raises NotImplementedError: _description_
+        :raises NotImplementedError: if not implemented in a subclass
+        """
+        raise NotImplementedError()
+    
+
+    def skip_to_end(self):
+        """
+        Step through the entire simulation to reach the final state.
+
+        REQUIREMENT: This method should call alert_observers() if it is used.
+
+        :raises NotImplementedError: if not implemented in a subclass
         """
         raise NotImplementedError()
