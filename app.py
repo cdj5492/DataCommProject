@@ -6,7 +6,7 @@ author: Mark Danza
 Initializes and runs the network simulator and matplotlib GUI.
 
 Example execution:
-$ python app.py -n data/networks/net1.txt -r data/recipes/net1_1.txt
+$ python app.py -n data/networks/net1.txt -r data/recipes/net1_1.txt -s 3
 """
 
 import argparse
@@ -22,8 +22,6 @@ from network.sim.file import init_routingcubes_from_file
 from network.sim.recipe import Recipe
 import routing_algorithms.template as routet
 import robot_algorithm.template as robt
-
-UNIVERSE_DIMENSIONS = (3,3,3)
 
 
 def _get_argparser() -> argparse.ArgumentParser:
@@ -41,6 +39,13 @@ def _get_argparser() -> argparse.ArgumentParser:
         type=str,
         required=False,
         help="Specify recipe file containing simulation instructions."
+    )
+    parser.add_argument(
+        "--size", "-s",
+        default=10,
+        type=int,
+        required=False,
+        help="Network size, which is used to determine the maximum coordinates displayed."
     )
     return parser
 
@@ -82,8 +87,10 @@ def main(argv):
     else:
         recipe = None
 
-    model = NetGridPresenter(simulator, UNIVERSE_DIMENSIONS, recipe)
-    ui = PlotGUI(UNIVERSE_DIMENSIONS, model)
+    universe_dimensions = (cliargs.size, cliargs.size, cliargs.size)
+
+    model = NetGridPresenter(simulator, universe_dimensions, recipe)
+    ui = PlotGUI(universe_dimensions, model)
     model.add_observer(ui)
 
     plt.show()
