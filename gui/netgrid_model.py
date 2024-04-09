@@ -92,3 +92,6 @@ class NetGridPresenter(Model):
     def restart(self):
         # TODO Currently no way to reset to initial state
         pass
+
+    def skip_to_end(self):
+        pass

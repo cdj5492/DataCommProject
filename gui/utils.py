@@ -126,4 +126,8 @@ class Model:
 
         :raises NotImplementedError: if not implemented in a subclass
         """
+        # TODO Change 'skip to end' feature with a 'run diagnostics' feature
+        # Running diagnostics allows the user to run the simulation for some specified
+        # number of cycles, keeping track of node metrics like number of packets
+        # processed, power consumed, collisions, etc.
         raise NotImplementedError()
