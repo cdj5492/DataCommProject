@@ -16,7 +16,7 @@ import routing_algorithms.template as routet
 import robot_algorithm.template as robt
 
 
-UNIVERSE_DIMENSIONS = (3,3,3)
+UNIVERSE_DIMENSIONS = (3,3,101)
 
 
 def init_simulator() -> NetworkGrid:
@@ -28,6 +28,11 @@ def init_simulator() -> NetworkGrid:
     grid.add_node(1, 0, 0)
     grid.add_node(1, 1, 0)
     grid.add_node(2, 0, 0)
+    
+    # add 100 in a line from 0,1,1 to 0,1,100
+    for i in range(1, 101):
+        grid.add_node(0, 1, i)
+    
     grid.add_robot(0, 1, 0)
     
     # Initiate a packet transmission
