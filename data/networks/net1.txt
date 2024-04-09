@@ -1,9 +1,4 @@
 # Example Network File
-#
-# One node per line, space-delimited x, y, z coordinates. Blank lines and commented lines
-# are ignored.
-#
-# Does not support robot nodes. Initialize robot nodes using a recipe.
 
 0 0 0
 1 0 0

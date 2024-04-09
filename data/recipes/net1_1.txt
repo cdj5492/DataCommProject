@@ -1,12 +1,4 @@
 # Example Recipe File
-#
-# One command per line, command name followed by integer arguments, space delimited.
-# Blank lines and commented lines are ignored.
-#
-# One command is executed every cycle, unless there is a WAIT. A WAIT command causes the
-# recipe execution to be effectively paused for the given number of cycles plus one.
-#
-# To make an infinite loop, pass a negative value as the argument for LOOP.
 
 # Add robot node
 ADDR 0 1 0
