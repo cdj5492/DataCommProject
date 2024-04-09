@@ -43,19 +43,19 @@ class Model:
         :param netgrid: simulator backend
         :param dimensions: (x, y, z) dimensions of grid to plot the network in
         """
-        self.netgrid = netgrid
-        self.dimensions = dimensions
-        super().__init__()
-        #self._observers = list()
+        #self.netgrid = netgrid
+        #self.dimensions = dimensions
+        #super().__init__()
+        self._observers = list()
     #def get_node_positions(self) -> np.ndarray[int]:
         #need this
-        node_map = self.netgrid.node_map
-        nodes = np.zeros(self.dimensions, dtype=int)
+        #node_map = self.netgrid.node_map
+        #nodes = np.zeros(self.dimensions, dtype=int)
 
-        for x, y, z in node_map.keys():
-            nodes[x, y, z] = 1
+        #for x, y, z in node_map.keys():
+         #   nodes[x, y, z] = 1
 
-        return nodes
+        #return nodes
 
     def get_node_facecolors(self) -> np.ndarray[str]:
         """
