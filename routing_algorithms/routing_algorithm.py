@@ -1,4 +1,4 @@
-from network.routing_cube import RoutingCube, Faces
+from network.routing_cube import RoutingCube
 
 # Class that all routing algorithms must inherit from.
 class RoutingAlgorithm:
