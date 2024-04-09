@@ -36,11 +36,40 @@ class Model:
     Object responsible for a network simulation.
     """
 
-    def __init__(self):
+    def __init__(self, netgrid: NetworkGrid, dimensions: tuple[int, int, int]):
         """
-        Create a model with an empty observers list.
+        Creates a presenter for the given grid.
+
+        :param netgrid: simulator backend
+        :param dimensions: (x, y, z) dimensions of grid to plot the network in
         """
-        self._observers = list()
+        self.netgrid = netgrid
+        self.dimensions = dimensions
+        super().__init__()
+        #self._observers = list()
+    #def get_node_positions(self) -> np.ndarray[int]:
+        #need this
+        node_map = self.netgrid.node_map
+        nodes = np.zeros(self.dimensions, dtype=int)
+
+        for x, y, z in node_map.keys():
+            nodes[x, y, z] = 1
+
+        return nodes
+
+    def get_node_facecolors(self) -> np.ndarray[str]:
+        """
+        Nodes containing packets are colored red. All other nodes are blue.
+        """
+        node_map = self.netgrid.node_map
+        node_facecolors = np.full(self.dimensions, COLOR_BLUE, dtype=str)
+
+        for (x, y, z), node in node_map.items():
+            if _node_has_packet(node):
+                node_facecolors[x, y, z] = COLOR_RED
+
+        return node_facecolors
+
 
 
     def alert_observers(self):
@@ -93,6 +122,8 @@ class Model:
 
         :raises NotImplementedError: if not implemented in a subclass
         """
+        self.netgrid.step()
+        self.alert_observers()
         raise NotImplementedError()
     
 
@@ -115,4 +146,7 @@ class Model:
 
         :raises NotImplementedError: _description_
         """
+        # Constants 
+        COLOR_BLUE = "blue"
+        COLOR_RED = "red"
         raise NotImplementedError()
