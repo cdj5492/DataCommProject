@@ -36,7 +36,7 @@ class Model:
     Object responsible for a network simulation.
     """
 
-    def __init__(self, netgrid: NetworkGrid, dimensions: tuple[int, int, int]):
+    def __init__(self):
         """
         Creates a presenter for the given grid.
 
