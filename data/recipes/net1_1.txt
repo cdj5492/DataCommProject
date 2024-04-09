@@ -19,5 +19,5 @@ WAIT 1
 ENDL
 
 # Add normal node and remove robot node
-ADDN 0 2 0
+ADDN 1 2 0
 RMVN 0 1 0

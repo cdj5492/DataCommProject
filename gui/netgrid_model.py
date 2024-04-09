@@ -13,10 +13,13 @@ from gui.utils import Model
 
 from network.faces import Direction
 from network.network_grid import NetworkGrid
+from network.robot import Robot
 from network.routing_cube import RoutingCube
+from network.sim.recipe import Recipe
 
 COLOR_RED = "red"
 COLOR_BLUE = "blue"
+COLOR_GREEN = "green"
 
 
 def _node_has_packet(node:RoutingCube):
@@ -33,13 +36,18 @@ def _node_has_packet(node:RoutingCube):
     )
 
 
+def _node_is_robot(node:RoutingCube, robots:list[Robot]) -> bool:
+    # TODO this should probably be a method of NetworkGrid
+    return any([bot.cube.position == node.position for bot in robots])
+
+
 class NetGridPresenter(Model):
     """
     "Presenter" class that acts as an intermediary between the NetworkGrid backend and
     the user interface.
     """
 
-    def __init__(self, netgrid:NetworkGrid, dimensions:tuple[int,int,int]):
+    def __init__(self, netgrid:NetworkGrid, dimensions:tuple[int,int,int], recipe:Recipe|None=None):
         """
         Creates a presenter for the given grid.
 
@@ -48,6 +56,7 @@ class NetGridPresenter(Model):
         """
         self.netgrid = netgrid
         self.dimensions = dimensions
+        self.recipe = recipe
         super().__init__()
 
     
@@ -67,19 +76,25 @@ class NetGridPresenter(Model):
         """
         node_map = self.netgrid.node_map
         node_facecolors = np.zeros(self.dimensions, dtype=str)
-        node_facecolors[:,:,:] = COLOR_BLUE
 
         for (x,y,z), node in node_map.items():
             if _node_has_packet(node):
-                node_facecolors[x,y,z] = COLOR_RED                
+                node_facecolors[x,y,z] = COLOR_RED
+            elif _node_is_robot(node, self.netgrid.robot_list):
+                node_facecolors[x,y,z] = COLOR_GREEN
+            else:
+                node_facecolors[x,y,z] = COLOR_BLUE 
 
         return node_facecolors
 
 
     def next_state(self):
         """
-        Step the internal NetworkGrid.
+        Step the internal NetworkGrid and recipe, if applicable. If a recipe exists, it
+        is stepped first.
         """
+        if self.recipe is not None:
+            self.recipe.execute_next(self.netgrid)
         self.netgrid.step()
         self.alert_observers()
 
