@@ -31,8 +31,8 @@ def _node_has_packet(node:RoutingCube):
     """
     # TODO this should probably be a method of RoutingCube
     return any(
-        node.faces.peek_packet(i) is not None
-        for i in list(Direction)
+        node.faces.peek_packet(d) is not None
+        for d in list(Direction)
     )
 
 
@@ -72,7 +72,8 @@ class NetGridPresenter(Model):
 
     def get_node_facecolors(self) -> np.ndarray[str]:
         """
-        Nodes containing packets are colored red. All other nodes are blue.
+        Nodes containing packets are colored red. Nodes representing robot connection
+        points are colored green. All other nodes are blue.
         """
         node_map = self.netgrid.node_map
         node_facecolors = np.zeros(self.dimensions, dtype=str)
@@ -109,4 +110,13 @@ class NetGridPresenter(Model):
         pass
 
     def skip_to_end(self):
-        pass
+        """
+        Repeatedly steps to the next state until the internal recipe is finished running.
+        Does nothing if there is no recipe.
+
+        WARNING: This function will block forever if the recipe has an infinite loop.
+        """
+        # TODO replace with more sophisticated diagnostics
+        if self.recipe is not None:
+            while self.recipe.is_running():
+                self.next_state()

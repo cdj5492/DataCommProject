@@ -147,7 +147,8 @@ class Recipe:
     def handle_SEND(self, netgrid:NetworkGrid, data:typing.Any, src_x:int, src_y:int, src_z:int, dir:int):
         # TODO accept dst_x, dst_y, dst_z instead of dir
         # NetworkGrid should probably have a send_packet(data, src, dst) method
-        netgrid.get_node(src_x, src_y, src_z).send_packet(Direction(dir), data)
+        node = netgrid.get_node(src_x, src_y, src_z)
+        node.send_packet(Direction(dir), data)
 
 
     def handle_WAIT(self, netgrid:NetworkGrid, cycles:int):
