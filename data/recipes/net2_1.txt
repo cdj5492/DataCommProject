@@ -1,0 +1,15 @@
+# Simple infinite simulation for network 2
+
+# Add four robots on opposing corners
+ADDR 0 5 6
+ADDR 5 0 6
+ADDR 6 5 0
+ADDR 6 5 10
+
+# Send packets between pairs of robots, with some delay
+LOOP -1
+SEND 42 5 0 6 1
+WAIT 2
+SEND 69 6 5 0 2
+WAIT 4
+ENDL
