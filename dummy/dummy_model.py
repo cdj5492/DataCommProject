@@ -84,7 +84,7 @@ class DummyNetSimulator(Model):
         self._update_state()
 
 
-    def skip_to_end(self):
+    def run(self):
         """
         Restart and then run simulation to end state.
         """

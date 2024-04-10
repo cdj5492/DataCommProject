@@ -94,8 +94,12 @@ class NetGridPresenter(Model):
         Step the internal NetworkGrid and recipe, if applicable. If a recipe exists, it
         is stepped first.
         """
+        # Execute next recipe cycle
         if self.recipe is not None:
+            # Resume recipe if paused
+            self.recipe.resume()
             self.recipe.execute_next(self.netgrid)
+        # Step network grid and update observers
         self.netgrid.step()
         self.alert_observers()
 
@@ -109,14 +113,21 @@ class NetGridPresenter(Model):
         # TODO Currently no way to reset to initial state
         pass
 
-    def skip_to_end(self):
+
+    def run(self):
         """
         Repeatedly steps to the next state until the internal recipe is finished running.
         Does nothing if there is no recipe.
 
         WARNING: This function will block forever if the recipe has an infinite loop.
         """
-        # TODO replace with more sophisticated diagnostics
+        # TODO Add more sophisticated diagnostics
         if self.recipe is not None:
+            # Resume recipe if paused
+            self.recipe.resume()
+            # Execute recipe cycles and step network grid until paused
             while self.recipe.is_running():
-                self.next_state()
+                self.recipe.execute_next(self.netgrid)
+                self.netgrid.step()
+            # Update observers with resulting state
+            self.alert_observers()

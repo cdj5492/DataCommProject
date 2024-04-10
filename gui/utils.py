@@ -117,15 +117,16 @@ class Model:
         raise NotImplementedError()
     
 
-    def skip_to_end(self):
+    def run(self):
         """
-        Step through the entire simulation to reach the final state.
+        Step through the entire simulation or a subset of it and update with the final
+        state.
 
         REQUIREMENT: This method should call alert_observers() if it is used.
 
         :raises NotImplementedError: if not implemented in a subclass
         """
-        # TODO Change 'skip to end' feature with a 'run diagnostics' feature
+        # TODO 'run diagnostics' feature
         # Running diagnostics allows the user to run the simulation for some specified
         # number of cycles, keeping track of node metrics like number of packets
         # processed, power consumed, collisions, etc.

@@ -6,6 +6,10 @@ ADDR 5 0 6
 ADDR 6 5 0
 ADDR 6 5 10
 
+# Delay for initialization
+WAIT 100
+PAUSE
+
 # Send packets between pairs of robots, with some delay
 LOOP -1
 SEND 42 5 0 6 1

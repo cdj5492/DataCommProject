@@ -18,6 +18,9 @@ How Recipes Work:
    multiple times.
  - To make an infinite loop, pass a negative value as the argument for LOOP.
  - Nested loops are not allowed.
+ - A PAUSE command can be used to create breakpoints in recipes so that lengthy sections
+   can be run without user intervention, but the user will gain control over the
+   simulation when the PAUSE is reached.
 
 The following commands are allowed in recipe files:
  - ADDN x y z: Add a node to the network at the specified coordinates.
@@ -29,6 +32,7 @@ The following commands are allowed in recipe files:
  - WAIT n: The recipe will do nothing for n+1 cycles.
  - LOOP n: The recipe will execute the enclosed block of commands for n+1 iterations.
  - ENDL: Denotes the end of a loop block.
+ - PAUSE: The recipe will stop executing until it is resumed manually.
 """
 
 import enum
@@ -51,6 +55,7 @@ class RecipeComm(enum.Enum):
     WAIT = enum.auto()
     LOOP = enum.auto()
     ENDL = enum.auto()
+    PAUSE = enum.auto()
 
 
     @classmethod
@@ -78,6 +83,7 @@ class RecipeComm(enum.Enum):
             cls.WAIT : 1,
             cls.LOOP : 1,
             cls.ENDL : 0,
+            cls.PAUSE : 0,
         }
     
 
@@ -125,6 +131,8 @@ class Recipe:
         self.loop_iters_remaining = 0          # Number of iterations remaining after a loop command
         self.loop_idx = 0                      # Index to return to at the end of a loop body
         self.in_loop = False                   # Whether the recipe is currently executing a loop body
+
+        self.paused = False                    # Whether the recipe is paused until user input is given
 
 
     @classmethod
@@ -329,6 +337,18 @@ class Recipe:
             self.idx = self.loop_idx
 
 
+    def handle_PAUSE(self, netgrid:NetworkGrid):
+        """
+        Handling method for PAUSE commands.
+
+        Suspends recipe execution until the resume() method is called (i.e., calls to
+        execute_next() will do nothing).
+
+        :param netgrid: unused
+        """
+        self.paused = True
+
+
     def handle_comm(self, netgrid:NetworkGrid, comm:RecipeComm, args:typing.Iterable):
         """
         Calls the appropriate handling method for the given command.
@@ -355,6 +375,8 @@ class Recipe:
             self.handle_LOOP(netgrid, *args)
         elif comm == RecipeComm.ENDL:
             self.handle_ENDL(netgrid, *args)
+        elif comm == RecipeComm.PAUSE:
+            self.handle_PAUSE(netgrid, *args)
         else:
             raise ValueError(f"Unsupported recipe command: '{comm}'")
 
@@ -368,6 +390,7 @@ class Recipe:
 
         :param netgrid: network grid to operate on
         """
+        # Only do things if recipe is running
         if self.is_running():
             # Do not execute next command if waiting
             if self.wait_cycles_remaining > 0:
@@ -383,11 +406,18 @@ class Recipe:
     def is_running(self) -> bool:
         """
         Helper method for determining whether this recipe is currently running. A recipe
-        is running if it has not reached its end.
+        is running if it has not reached its end and it is not paused.
 
         :return: True if the recipe is running
         """
-        return self.length > self.idx
+        return (self.length > self.idx) and not self.paused
+    
+
+    def resume(self):
+        """
+        Unpauses the recipe if it is paused. Has no effect if the recipe is running.
+        """
+        self.paused = False
 
 
     def __str__(self) -> str:
