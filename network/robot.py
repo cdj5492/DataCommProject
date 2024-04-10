@@ -1,11 +1,12 @@
 from .routing_cube import RoutingCube
+from .faces import Direction
 
 # robot is just holds a reference to a routing cube it can use to send and receive packets
 class Robot:
     def __init__(self, cube: RoutingCube) -> None:
         self.cube = cube
         
-    def send_packet(self, direction, packet):
+    def send_packet(self, direction: Direction, packet):
         return self.cube.send_packet(direction, packet)
     
     def get_packet(self, direction):

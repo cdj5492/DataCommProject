@@ -1,5 +1,6 @@
 from .robot_algorithm import RobotAlgorithm
 from network.robot import Robot
+from network.faces import Direction
 from dataclasses import dataclass
 import random
 
@@ -15,13 +16,13 @@ class Template(RobotAlgorithm):
         
     def step(self, robot: Robot) -> None:
         # demo robot algorithm that just sends sends a packet
-        # containing random data out of a random face once every 10 time steps
+        # containing random data out of a random face once every few time steps
         
-        if robot.cube.data.step % 10 == 0:
+        if robot.cube.data.step % 2 == 0:
             packetData = random.randint(0, 100)
             packet = {"data": packetData}
             face = random.randint(0, 5)
-            robot.send_packet(face, packet)
+            robot.send_packet(Direction(face), packet)
 
         robot.cube.data.step += 1
     

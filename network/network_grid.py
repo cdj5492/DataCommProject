@@ -39,6 +39,9 @@ class NetworkGrid:
         self.robot_list.append(robot)
         
         self.add_node(x, y, z, node)
+        
+        # power on
+        self.robot_algorithm.power_on(robot)
     
     def add_node(self, x: int, y: int, z: int, node: RoutingCube = None):
         if node is None:
