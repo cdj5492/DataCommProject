@@ -6,7 +6,7 @@ author: Mark Danza
 Initializes and runs the network simulator and matplotlib GUI.
 
 Example execution:
-$ python app.py -n data/networks/net1.txt -r data/recipes/net1_1.txt -s 3
+$ python app.py bmf -n data/networks/net1.txt -r data/recipes/net1_1.txt -s 3
 """
 
 import argparse
@@ -20,12 +20,26 @@ from gui.netgrid_model import NetGridPresenter
 from network.network_grid import NetworkGrid
 from network.sim.file import init_routingcubes_from_file
 from network.sim.recipe import Recipe
+from routing_algorithms.bellmanford import BMF_ROUTING_ALGO_NAME, BellmanFordRouting
 import routing_algorithms.template as routet
 import robot_algorithm.template as robt
 
 
+routing_algos = {
+    "template" : (routet.Template, robt.Template),
+    BMF_ROUTING_ALGO_NAME : (BellmanFordRouting, robt.Template),
+}
+
+
 def _get_argparser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "algorithm",
+        default="template",
+        type=str,
+        choices=("template", BMF_ROUTING_ALGO_NAME),
+        help="Routing algorithm to use"
+    )
     parser.add_argument(
         "--network", "--net", "-n",
         default=None,
@@ -50,20 +64,24 @@ def _get_argparser() -> argparse.ArgumentParser:
     return parser
 
 
-def init_simulator(net_file_path:os.PathLike|None=None) -> NetworkGrid:
+def init_simulator(routing_algo_name:str, net_file_path:os.PathLike|None=None) -> NetworkGrid:
     """
     Initialize a NetworkGrid and populate it with the nodes specified in the given
     network file.
 
+    :param routing_algo_name: string identifier of routing algorithm to use
     :param net_file_path: optional path to file containing network node information
     :return: network simulator object
     """
+    # Instantiate routing and robot algorithm classes
+    routing_alg_t, robo_alg_t = routing_algos[routing_algo_name]
+    routing_alg, robo_alg = routing_alg_t(), robo_alg_t()
+
     # TODO Workaround for bug in robot algorithm template
-    robo_alg = robt.Template()
     robo_alg.step = lambda _ : None
 
     # Main grid
-    grid = NetworkGrid(routet.Template(), robo_alg)
+    grid = NetworkGrid(routing_alg, robo_alg)
 
     if net_file_path is not None:
         # Add nodes to the grid
@@ -81,7 +99,7 @@ def main(argv):
     cliargs = parser.parse_args(argv)
 
     # Initialization
-    simulator = init_simulator(cliargs.network)
+    simulator = init_simulator(cliargs.algorithm, cliargs.network)
     if cliargs.recipe is not None:
         recipe = Recipe.from_file(cliargs.recipe)
     else:
