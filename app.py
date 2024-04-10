@@ -20,14 +20,14 @@ from gui.netgrid_model import NetGridPresenter
 from network.network_grid import NetworkGrid
 from network.sim.file import init_routingcubes_from_file
 from network.sim.recipe import Recipe
-from routing_algorithms.bellmanford import BMF_ROUTING_ALGO_NAME, BellmanFordRouting
+from routing_algorithms.bellmanford import BMF_ROUTING_ALGO_NAME, BellmanFordRouting, BellmanFordRobot
 import routing_algorithms.template as routet
 import robot_algorithm.template as robt
 
 
 routing_algos = {
     "template" : (routet.Template, robt.Template),
-    BMF_ROUTING_ALGO_NAME : (BellmanFordRouting, robt.Template),
+    BMF_ROUTING_ALGO_NAME : (BellmanFordRouting, BellmanFordRobot),
 }
 
 
@@ -76,9 +76,6 @@ def init_simulator(routing_algo_name:str, net_file_path:os.PathLike|None=None) -
     # Instantiate routing and robot algorithm classes
     routing_alg_t, robo_alg_t = routing_algos[routing_algo_name]
     routing_alg, robo_alg = routing_alg_t(), robo_alg_t()
-
-    # TODO Workaround for bug in robot algorithm template
-    robo_alg.step = lambda _ : None
 
     # Main grid
     grid = NetworkGrid(routing_alg, robo_alg)

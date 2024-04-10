@@ -1,8 +1,10 @@
 import dataclasses
 import typing
 
+from network.robot import Robot
 from network.routing_cube import RoutingCube
 from network.faces import Direction
+from robot_algorithm.robot_algorithm import RobotAlgorithm
 from routing_algorithms.routing_algorithm import RoutingAlgorithm
 
 node_addr_t: typing.TypeAlias = tuple[int,int,int]
@@ -226,7 +228,7 @@ class BellmanFordRouting(RoutingAlgorithm):
                     self.route(cube)
 
                 else:
-                    raise TypeError("Bad packet type")
+                    raise TypeError(f"Bad packet type: {type(pkt)}")
         
         return cube
 
@@ -235,3 +237,16 @@ class BellmanFordRouting(RoutingAlgorithm):
         # Initialize cube data and notify neighbor nodes of the cube's existence
         cube.data = BellmanFordData(cube.position)
         self.send_new_neighbor_notif(cube)
+
+
+class BellmanFordRobot(RobotAlgorithm):
+    def __init__(self) -> None:
+        self.internal_cube_algo = BellmanFordRouting()
+
+
+    def step(self, robot: Robot) -> RoutingCube:
+        self.internal_cube_algo.route(robot.cube)
+        
+
+    def power_on(self, robot: Robot) -> None:
+        self.internal_cube_algo.power_on(robot.cube)
