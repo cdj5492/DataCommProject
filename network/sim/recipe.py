@@ -27,8 +27,9 @@ The following commands are allowed in recipe files:
  - ADDR x y z: Add a robot node to the network at the specified coordinates.
  - RMVN x y z: Removes the node at the specified coordinates from the network. May also
    be used to remove robot nodes.
- - SEND data src_x src_y src_z direction: Sends the given data from the node specified by
-   the src coordinates out of the face specified by the direction.
+ - SEND data src_x src_y src_z dest_x dest_y dest_z: Sends the given data from the node
+   specified by the src coordinates to the node specified by the dest coordinates using
+   the routing algorithm of the network.
  - WAIT n: The recipe will do nothing for n+1 cycles.
  - LOOP n: The recipe will execute the enclosed block of commands for n+1 iterations.
  - ENDL: Denotes the end of a loop block.
@@ -79,7 +80,7 @@ class RecipeComm(enum.Enum):
             cls.ADDN : 3,
             cls.ADDR : 3,
             cls.RMVN : 3,
-            cls.SEND : 5,
+            cls.SEND : 7,
             cls.WAIT : 1,
             cls.LOOP : 1,
             cls.ENDL : 0,
@@ -258,24 +259,23 @@ class Recipe:
         netgrid.remove_node(x, y, z)
 
 
-    def handle_SEND(self, netgrid:NetworkGrid, data:typing.Any, src_x:int, src_y:int, src_z:int, dir:int):
+    def handle_SEND(self, netgrid:NetworkGrid, data:typing.Any, src_x:int, src_y:int, src_z:int, dest_x:int, dest_y:int, dest_z:int):
         """
         Handling method for SEND commands.
 
-        Sends the given data from the source node to the adjacent node in the specified
-        direction.
+        Calls on the network grid to use its routing algorithm to trigger a packet
+        transmission from the source node to the destination node.
 
         :param netgrid: network grid to operate on
         :param data: data to send
         :param src_x: x-coordinate of source node
         :param src_y: y-coordinate of source node
         :param src_z: z-coordinate of source node
-        :param dir: face direction to send the data on
+        :param src_x: x-coordinate of destination node
+        :param src_y: y-coordinate of destination node
+        :param src_z: z-coordinate of destination node
         """
-        # TODO accept dst_x, dst_y, dst_z instead of dir
-        # NetworkGrid should probably have a send_packet(data, src, dst) method
-        node = netgrid.get_node(src_x, src_y, src_z)
-        node.send_packet(Direction(dir), data)
+        netgrid.send_packet(data, (src_x,src_y,src_z), (dest_x,dest_y,dest_z))
 
 
     def handle_WAIT(self, netgrid:NetworkGrid, cycles:int):

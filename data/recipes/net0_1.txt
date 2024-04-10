@@ -4,7 +4,7 @@ PAUSE
 
 # Send a single packet
 LOOP -1
-SEND 42 0 0 0 3
+SEND 42 0 0 0 1 1 0
 WAIT 0
 PAUSE
 ENDL

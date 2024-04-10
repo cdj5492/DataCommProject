@@ -5,7 +5,7 @@ ADDR 0 1 0
 
 # Send and wait for a packet in a loop (loop executes a total of 2+1 = 3 times)
 LOOP 2
-SEND 42 2 0 0 2
+SEND 42 2 0 0 0 0 0
 # Wait 1+1 = 2 total cycles for packet transmission
 WAIT 1
 ENDL

@@ -1,3 +1,7 @@
+"""
+[MD] 4/10/24 Added NetworkGrid.send_packet()
+"""
+
 from .routing_cube import RoutingCube
 from .faces import Direction
 from typing import Dict
@@ -193,3 +197,8 @@ class NetworkGrid:
             
         for robot in self.robot_list:
             robot.step(self.robot_algorithm)
+
+    def send_packet(self, data, src_addr:tuple[int,int,int], dest_addr:tuple[int,int,int]):
+        # Retrieves the source node and calls the routing algorithm to trigger packet transmission
+        src_node = self.get_node(*src_addr)
+        self.routing_algorithm.send_packet(src_node, dest_addr, data)
