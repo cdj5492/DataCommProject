@@ -1,0 +1,10 @@
+# Delay for initialization
+WAIT 9
+PAUSE
+
+# Send a single packet
+LOOP -1
+SEND 42 0 0 0 3
+WAIT 0
+PAUSE
+ENDL
