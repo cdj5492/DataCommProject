@@ -1,3 +1,7 @@
+"""
+[MD] 4/10/24 Added RoutingAlgorithm.send_packet()
+"""
+
 from network.routing_cube import RoutingCube
 
 # Class that all routing algorithms must inherit from.
@@ -11,4 +15,8 @@ class RoutingAlgorithm:
     
     # Called once when this cube is first powered on.
     def power_on(self, cube: RoutingCube) -> None:
+        pass
+
+    # Called when a packet transmission needs to be simulated.
+    def send_packet(self, cube: RoutingCube, dest_addr, data) -> None:
         pass

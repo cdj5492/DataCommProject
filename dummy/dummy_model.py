@@ -82,3 +82,12 @@ class DummyNetSimulator(Model):
         """
         self.idx = 0
         self._update_state()
+
+
+    def run(self):
+        """
+        Restart and then run simulation to end state.
+        """
+        self.restart()
+        while self.idx < self.max_states - 1:
+            self.next_state()
