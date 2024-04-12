@@ -1,3 +1,7 @@
+"""
+[MD] 4/11/24 Modified Template.route() to use new RoutingCube.get_packet() method.
+"""
+
 from network.routing_cube import RoutingCube
 from network.faces import Direction
 from .routing_algorithm import RoutingAlgorithm
@@ -11,27 +15,21 @@ class Template(RoutingAlgorithm):
     def route(self, cube: RoutingCube):
         # demo routing algorithm just takes the data coming into
         # each face and outputs to the opposite face
-        
-        packet = cube.get_packet(Direction.UP)
+        packet, rx_dir = cube.get_packet()
+
         if packet is not None:
-            cube.send_packet(Direction.DOWN, packet)
-        packet = cube.get_packet(Direction.DOWN)
-        if packet is not None:
-            cube.send_packet(Direction.UP, packet)
-            
-        packet = cube.get_packet(Direction.NORTH)
-        if packet is not None:
-            cube.send_packet(Direction.SOUTH, packet)
-        packet = cube.get_packet(Direction.SOUTH)
-        if packet is not None:
-            cube.send_packet(Direction.NORTH, packet)
-            
-        packet = cube.get_packet(Direction.EAST)
-        if packet is not None:
-            cube.send_packet(Direction.WEST, packet)
-        packet = cube.get_packet(Direction.WEST)
-        if packet is not None:
-            cube.send_packet(Direction.EAST, packet)
+            if rx_dir == Direction.UP:
+                cube.send_packet(Direction.DOWN, packet)
+            elif rx_dir == Direction.DOWN:
+                cube.send_packet(Direction.UP, packet)
+            if rx_dir == Direction.NORTH:
+                cube.send_packet(Direction.SOUTH, packet)
+            elif rx_dir == Direction.SOUTH:
+                cube.send_packet(Direction.NORTH, packet)
+            if rx_dir == Direction.EAST:
+                cube.send_packet(Direction.WEST, packet)
+            elif rx_dir == Direction.WEST:
+                cube.send_packet(Direction.EAST, packet)
         
         return cube
     

@@ -11,7 +11,6 @@ import numpy as np
 
 from gui.utils import Model
 
-from network.faces import Direction
 from network.network_grid import NetworkGrid
 from network.robot import Robot
 from network.routing_cube import RoutingCube
@@ -20,20 +19,6 @@ from network.sim.recipe import Recipe
 COLOR_RED = "red"
 COLOR_BLUE = "blue"
 COLOR_GREEN = "green"
-
-
-def _node_has_packet(node:RoutingCube):
-    """
-    Checks whether the given node contains a packet at any of its faces.
-
-    :param node: routing cube
-    :return: True if there is a packet in node
-    """
-    # TODO this should probably be a method of RoutingCube
-    return any(
-        node.faces.peek_packet(d) is not None
-        for d in list(Direction)
-    )
 
 
 def _node_is_robot(node:RoutingCube, robots:list[Robot]) -> bool:
@@ -79,7 +64,7 @@ class NetGridPresenter(Model):
         node_facecolors = np.zeros(self.dimensions, dtype=str)
 
         for (x,y,z), node in node_map.items():
-            if _node_has_packet(node):
+            if node.has_packet():
                 node_facecolors[x,y,z] = COLOR_RED
             elif _node_is_robot(node, self.netgrid.robot_list):
                 node_facecolors[x,y,z] = COLOR_GREEN

@@ -1,3 +1,10 @@
+"""
+[MD] 4/11/24 Removed direction argument from Robot.get_packet() to support single-queue
+RoutingCube implementation. Removed newly obsolete method Robot.get_any_packet().
+"""
+
+import typing
+
 from .routing_cube import RoutingCube
 from .faces import Direction
 
@@ -9,15 +16,8 @@ class Robot:
     def send_packet(self, direction: Direction, packet):
         return self.cube.send_packet(direction, packet)
     
-    def get_packet(self, direction):
-        return self.cube.get_packet(direction)
-    
-    def get_any_packet(self):
-        for i in range(6):
-            packet = self.get_packet(i)
-            if packet is not None:
-                return packet
-        return None
+    def get_packet(self) -> tuple[typing.Any, Direction]|tuple[None, None]:
+        return self.cube.get_packet()
     
     def step(self, robot_algorithm):
         robot_algorithm.step(self)

@@ -20,14 +20,14 @@ from gui.netgrid_model import NetGridPresenter
 from network.network_grid import NetworkGrid
 from network.sim.file import init_routingcubes_from_file
 from network.sim.recipe import Recipe
-from routing_algorithms.bellmanford import BMF_ROUTING_ALGO_NAME, BellmanFordRouting, BellmanFordRobot
+from routing_algorithms.bellmanford import BellmanFordRouting, BellmanFordRobot
 import routing_algorithms.template as routet
 import robot_algorithm.template as robt
 
 
 routing_algos = {
     "template" : (routet.Template, robt.Template),
-    BMF_ROUTING_ALGO_NAME : (BellmanFordRouting, BellmanFordRobot),
+    "bmf" : (BellmanFordRouting, BellmanFordRobot),
 }
 
 
@@ -37,7 +37,7 @@ def _get_argparser() -> argparse.ArgumentParser:
         "algorithm",
         default="template",
         type=str,
-        choices=("template", BMF_ROUTING_ALGO_NAME),
+        choices=list(routing_algos.keys()),
         help="Routing algorithm to use"
     )
     parser.add_argument(

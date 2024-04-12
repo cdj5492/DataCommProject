@@ -7,7 +7,7 @@ ADDR 6 5 0
 ADDR 6 5 10
 
 # Delay for initialization
-WAIT 100
+WAIT 300
 PAUSE
 
 # Send packets between pairs of robots, with some delay
