@@ -2,12 +2,23 @@
 [MD] 4/11/24 RoutingCube now has a single Queue where packets are stored after being
 received on the faces (as opposed to the Faces object having a separate queue for each
 Face).
+[MD] 4/14/24 Added NodeDiagnostics class for tracking RoutingCube statistics at runtime.
 """
 
+import dataclasses
 import queue
 import typing
 
 from .faces import Faces, Direction
+
+
+@dataclasses.dataclass
+class NodeDiagnostics:
+    num_pkts_sent : int = 0
+    num_pkts_received : int = 0
+    num_pkts_dropped : int = 0
+    highest_q_len : int = 0
+    is_robot : bool = False
 
 
 class RoutingCube:
@@ -29,12 +40,11 @@ class RoutingCube:
         # custom data stored in this cube for use by routing algorithms
         self.data = None
 
-        # Network diagnostic information specific to this cube
-        self.num_pkts_received = 0
-        self.num_pkts_dropped = 0
-        self.highest_q_len = 0
+        # Network diagnostic information tracked by this cube
+        self.stats = NodeDiagnostics()
         
     def send_packet(self, direction: Direction, packet):
+        self.stats.num_pkts_sent += 1
         # check if the face is connected to another cube
         return self.ll_references.add_packet(direction, packet)
     
@@ -65,17 +75,17 @@ class RoutingCube:
         received = self.faces.get_all_packets()
 
         for pkt in received:
-            self.num_pkts_received += 1
+            self.stats.num_pkts_received += 1
             try:
                 self._packets.put_nowait(pkt)
             except queue.Full:
                 # Packet lost
-                self.num_pkts_dropped += 1
+                self.stats.num_pkts_dropped += 1
 
             # Track highest recorded queue length
             q_len = self._packets.qsize()
-            if q_len > self.highest_q_len:
-                self.highest_q_len = q_len
+            if q_len > self.stats.highest_q_len:
+                self.stats.highest_q_len = q_len
         
     def __repr__(self) -> str:
         packets = [f"{Direction(i).name}: {self.faces.face_has_packet(Direction(i))}" for i in range(6)]

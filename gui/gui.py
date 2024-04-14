@@ -58,15 +58,29 @@ class PlotGUI(Observer):
         self.btn_run.on_clicked(self.run)
         # self.btn_skip_to_end = Button(ax_skip_to_end_btn, "Skip to End")
         # self.btn_skip_to_end.on_clicked(self.skip_to_end)
+
+        self.colormode = "num_pkts_received" # TODO get rid of magic value
     
 
-    def plot_voxels(self, voxels:np.ndarray[voxel_pos_t], facecolors=None):
+    def plot_voxels(self, metric:str):
         """
-        Re-plot the main axis with the given voxel array.
+        Re-plot the main axis.
 
-        :param voxels: _description_
+        :param metric: _description_
         """
         self.ax.cla() # Clear main axis
+
+        net_x, net_y, net_z = self._model.get_network_dimensions()
+        voxels = np.zeros((net_x, net_y, net_z))
+        facecolors = np.zeros((net_x, net_y, net_z, 4))
+
+        voxeldata = self._model.get_node_voxeldata()
+
+        for data in voxeldata:
+            x, y, z = data.coordinates
+            voxels[x,y,z] = 1
+            facecolors[x,y,z] = data.facecolor(metric)
+        
         self.ax.voxels(voxels, facecolors=facecolors, edgecolor='k') # Draw voxels on main axis
         plt.draw()
 
@@ -78,15 +92,6 @@ class PlotGUI(Observer):
         :param event: unused
         """
         self._model.next_state()
-
-
-    def prev(self, event):
-        """
-        Advance the model to the previous state.
-
-        :param event: unused
-        """
-        self._model.prev_state()
 
 
     def run(self, event):
@@ -102,6 +107,4 @@ class PlotGUI(Observer):
         """
         Plot the nodes in the model as voxels.
         """
-        vox_array = self._model.get_node_positions()
-        vox_colors = self._model.get_node_facecolors()
-        self.plot_voxels(vox_array, vox_colors)
+        self.plot_voxels(self.colormode)

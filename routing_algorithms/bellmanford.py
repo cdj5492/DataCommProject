@@ -276,7 +276,7 @@ class BellmanFordRouting(RoutingAlgorithm):
         next_hop = cube.data.next_hop(pkt.dest)
         if next_hop is None:
             # This cube does not know a route to the destination
-            cube.num_pkts_dropped += 1
+            cube.stats.num_pkts_dropped += 1
             return
         
         # Send the packet in the appropriate direction

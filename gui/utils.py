@@ -6,7 +6,12 @@ author: Mark Danza
 Contains interface-like class definitions for the Observer and Model types.
 """
 
+import collections
+import dataclasses
+import typing
+
 import numpy as np
+import matplotlib.colors
 
 
 class Observer:
@@ -29,6 +34,11 @@ class Observer:
         :raises NotImplementedError: if not implemented in a subclass
         """
         raise NotImplementedError()
+
+
+class VoxelData:
+    def __init__(self, coordinates:tuple[int,int,int]):
+        self.coordinates = coordinates
 
 
 class Model:
@@ -60,44 +70,17 @@ class Model:
         self.alert_observers()
 
 
-    def get_node_positions(self) -> np.ndarray[int]:
-        """
-        Construct a 3D array representing the network, with a truthy value at every
-        (x,y,z) coordinate where there is a node present.
-
-        :raises NotImplementedError: if not implemented in a subclass
-        :return: array indicating node positions for drawing voxels
-        """
+    def get_network_dimensions(self) -> tuple[int,int,int]:
         raise NotImplementedError()
-    
 
-    def get_node_facecolors(self) -> np.ndarray[str]|None:
-        """
-        Construct a 3D array with a matplotlib color code at each (x,y,z) coordinate that
-        corresponds to the position of a node.
 
-        This method may return None to inidcate the use of default facecolors.
-
-        :raises NotImplementedError: if not implemented in a subclass
-        :return: array indicating node colors for drawing voxels
-        """
+    def get_node_voxeldata(self) -> list[VoxelData]:
         raise NotImplementedError()
 
 
     def next_state(self):
         """
         Step the simulator and graphics to the next network state in time. 
-
-        REQUIREMENT: This method should call alert_observers() if it is used.
-
-        :raises NotImplementedError: if not implemented in a subclass
-        """
-        raise NotImplementedError()
-    
-
-    def prev_state(self):
-        """
-        Step the simulator and graphics to the previous network state. 
 
         REQUIREMENT: This method should call alert_observers() if it is used.
 
@@ -117,13 +100,14 @@ class Model:
         raise NotImplementedError()
     
 
-    def run(self):
+    def run(self, **kwargs):
         """
         Step through the entire simulation or a subset of it and update with the final
         state.
 
         REQUIREMENT: This method should call alert_observers() if it is used.
 
+        :param kwargs: model-specific keyword arguments provided by the UI
         :raises NotImplementedError: if not implemented in a subclass
         """
         # TODO 'run diagnostics' feature
@@ -131,3 +115,161 @@ class Model:
         # number of cycles, keeping track of node metrics like number of packets
         # processed, power consumed, collisions, etc.
         raise NotImplementedError()
+
+
+class ColorVals:
+    DEFAULT_RGB : float = 0.0
+    DEFAULT_ALPHA : float = 1.0
+
+
+    def __init__(self, r:float|None, g:float|None, b:float|None, a:float|None=None):
+        self.r = r
+        self.g = g
+        self.b = b
+        self.a = a
+        self.__next_val = 0
+
+
+    def vals(self) -> tuple[float,float,float,float]:
+        colors = list()
+        # Get rgb values or default
+        for val in (self.r, self.g, self.b):
+            if val is not None:
+                colors.append(val)
+            else:
+                colors.append(ColorVals.DEFAULT_RGB)
+
+        # Get alpha value or default
+        if self.a is not None:
+            colors.append(self.a)
+        else:
+            colors.append(ColorVals.DEFAULT_ALPHA)
+        
+        return tuple(colors)
+    
+
+    def __iter__(self):
+        return self
+    
+
+    def __next__(self):
+        self.__next_val += 1
+        if self.__next_val == 1:
+            return self.r
+        elif self.__next_val == 2:
+            return self.g
+        elif self.__next_val == 3:
+            return self.b
+        elif self.__next_val == 4:
+            return self.a
+        else:
+            self.__next_val = 0
+            raise StopIteration
+
+
+class ColorNormalizer:
+    def __init__(self, r:float|None, g:float|None, b:float|None, a:float|None=None, min_rgba_val:float=0.0, max_rgba_val:float=255.0):
+        self.colors = ColorVals(r, g, b, a)
+        self.min_rgba_val = min_rgba_val
+        self.max_rgba_val = max_rgba_val
+
+
+    def get_normalized(self) -> ColorVals:
+        normalizer = matplotlib.colors.Normalize(vmin=self.min_rgba_val, vmax=self.max_rgba_val, clip=True)
+
+        colors = list()
+        for val in (self.colors.r, self.colors.g, self.colors.b, self.colors.a):
+            if val is not None:
+                colors.append(normalizer(val))
+            else:
+                colors.append(None)
+
+        return ColorVals(*colors)
+    
+
+    NULL = __init__(None, None, None)
+
+
+@dataclasses.dataclass
+class ColorConf:
+    priority : int
+
+
+    def __call__(self, *args, **kwargs) -> ColorVals:
+        raise NotImplementedError()
+
+
+@dataclasses.dataclass
+class ColorConfGroup:
+    confs : list[ColorConf]
+
+
+    def __call__(self, *args, **kwargs) -> ColorVals:
+        colors = list()
+        priorities = list()
+
+        for conf in self.confs:
+            colors.append(conf(*args, **kwargs))
+            priorities.append(conf.priority)
+
+        result = [None, None, None, None]
+        current_priority = 0
+        
+        for color, priority in zip(colors, priorities):
+            if priority > current_priority:
+                # Overwrite current rgba values with higher priority (non-None) rgba values
+                for i, val in enumerate(color):
+                    if val is not None:
+                        result[i] = val
+                # Increase priority level of current color
+                current_priority = priority
+            else:
+                # Overwrite a value if the current value is None and the new one is not
+                for i, val in enumerate(color):
+                    if result[i] is None and val is not None:
+                        result[i] = val
+        
+        return ColorVals(*result)
+    
+
+@dataclasses.dataclass
+class ColorConditional(ColorConf):
+    on_color : ColorNormalizer
+    off_color : ColorNormalizer
+    condition : typing.Callable[[typing.Any], bool]
+
+
+    def __call__(self, *args, **kwargs) -> ColorVals:
+        if self.condition(*args, **kwargs):
+            return self.on_color.get_normalized()
+        else:
+            return self.off_color.get_normalized()
+
+
+@dataclasses.dataclass
+class ColorGradient(ColorConf):
+    min_color : ColorNormalizer
+    max_color : ColorNormalizer
+    ref_range_min : float
+    ref_range_max : float
+
+
+    def __call__(self, ref_val:float) -> ColorVals:
+        norm_min_color = self.min_color.get_normalized()
+        norm_max_color = self.max_color.get_normalized()
+
+        ref_normalizer = matplotlib.colors.Normalize(vmin=self.ref_range_min, vmax=self.ref_range_max, clip=True)
+        norm_ref_val = ref_normalizer(ref_val)
+
+        gradient_diff = list()
+        for real_min, real_max, min_val, max_val, in zip(norm_min_color, norm_max_color, norm_min_color.vals(), norm_max_color.vals()):
+            if real_min is None and real_max is None:
+                gradient_diff.append(0)
+            else:
+                gradient_diff.append(max_val - min_val)
+
+        gradient_color = list()
+        for grad, min_val in zip(gradient_diff, norm_min_color.vals()):
+            gradient_color.append(norm_ref_val*grad + min_val)
+
+        return ColorVals(*gradient_color)
