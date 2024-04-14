@@ -59,14 +59,14 @@ class PlotGUI(Observer):
         # self.btn_skip_to_end = Button(ax_skip_to_end_btn, "Skip to End")
         # self.btn_skip_to_end.on_clicked(self.skip_to_end)
 
-        self.colormode = "num_pkts_received" # TODO get rid of magic value
+        self.colormode = "pkt-flow" # TODO get rid of magic value
     
 
-    def plot_voxels(self, metric:str):
+    def plot_voxels(self, colormode:str):
         """
         Re-plot the main axis.
 
-        :param metric: _description_
+        :param colormode: _description_
         """
         self.ax.cla() # Clear main axis
 
@@ -74,12 +74,12 @@ class PlotGUI(Observer):
         voxels = np.zeros((net_x, net_y, net_z))
         facecolors = np.zeros((net_x, net_y, net_z, 4))
 
-        voxeldata = self._model.get_node_voxeldata()
+        voxeldata = self._model.get_node_voxeldata(colormode)
 
         for data in voxeldata:
             x, y, z = data.coordinates
             voxels[x,y,z] = 1
-            facecolors[x,y,z] = data.facecolor(metric)
+            facecolors[x,y,z] = data.facecolor()
         
         self.ax.voxels(voxels, facecolors=facecolors, edgecolor='k') # Draw voxels on main axis
         plt.draw()

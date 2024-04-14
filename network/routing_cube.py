@@ -19,6 +19,31 @@ class NodeDiagnostics:
     num_pkts_dropped : int = 0
     highest_q_len : int = 0
     is_robot : bool = False
+    has_packet : bool = False
+
+
+    def get_num_pkts_sent(self) -> int:
+        return self.num_pkts_sent
+    
+
+    def get_num_pkts_received(self) -> int:
+        return self.num_pkts_received
+    
+
+    def get_num_pkts_dropped(self) -> int:
+        return self.num_pkts_dropped
+    
+
+    def get_highest_q_len(self) -> int:
+        return self.highest_q_len
+    
+
+    def get_is_robot(self) -> bool:
+        return self.is_robot
+    
+
+    def get_has_packet(self) -> bool:
+        return self.has_packet
 
 
 class RoutingCube:
@@ -41,10 +66,19 @@ class RoutingCube:
         self.data = None
 
         # Network diagnostic information tracked by this cube
-        self.stats = NodeDiagnostics()
+        self._stats = NodeDiagnostics()
+
+    @property
+    def stats(self) -> NodeDiagnostics:
+        self._stats.has_packet = self.has_packet()
+        return self._stats
+    
+    @stats.setter
+    def stats(self, value:NodeDiagnostics):
+        self._stats = value
         
     def send_packet(self, direction: Direction, packet):
-        self.stats.num_pkts_sent += 1
+        self._stats.num_pkts_sent += 1
         # check if the face is connected to another cube
         return self.ll_references.add_packet(direction, packet)
     
@@ -75,17 +109,17 @@ class RoutingCube:
         received = self.faces.get_all_packets()
 
         for pkt in received:
-            self.stats.num_pkts_received += 1
+            self._stats.num_pkts_received += 1
             try:
                 self._packets.put_nowait(pkt)
             except queue.Full:
                 # Packet lost
-                self.stats.num_pkts_dropped += 1
+                self._stats.num_pkts_dropped += 1
 
             # Track highest recorded queue length
             q_len = self._packets.qsize()
-            if q_len > self.stats.highest_q_len:
-                self.stats.highest_q_len = q_len
+            if q_len > self._stats.highest_q_len:
+                self._stats.highest_q_len = q_len
         
     def __repr__(self) -> str:
         packets = [f"{Direction(i).name}: {self.faces.face_has_packet(Direction(i))}" for i in range(6)]

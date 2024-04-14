@@ -187,7 +187,9 @@ class ColorNormalizer:
         return ColorVals(*colors)
     
 
-    NULL = __init__(None, None, None)
+    @classmethod
+    def null(cls):
+        return cls(None, None, None, None)
 
 
 @dataclasses.dataclass
@@ -252,12 +254,14 @@ class ColorGradient(ColorConf):
     max_color : ColorNormalizer
     ref_range_min : float
     ref_range_max : float
+    get_ref_val : typing.Callable[[typing.Any], float]
 
 
-    def __call__(self, ref_val:float) -> ColorVals:
+    def __call__(self, *args, **kwargs) -> ColorVals:
         norm_min_color = self.min_color.get_normalized()
         norm_max_color = self.max_color.get_normalized()
-
+        
+        ref_val = self.get_ref_val(*args, **kwargs)
         ref_normalizer = matplotlib.colors.Normalize(vmin=self.ref_range_min, vmax=self.ref_range_max, clip=True)
         norm_ref_val = ref_normalizer(ref_val)
 

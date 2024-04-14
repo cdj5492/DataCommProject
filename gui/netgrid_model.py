@@ -11,92 +11,32 @@ import typing
 
 import numpy as np
 
-from gui.utils import VoxelData, Model, ColorConf, ColorConfGroup, ColorNormalizer, ColorConditional, ColorGradient
+from gui.color_conf import NODE_COLOR_CONFS, VALID_COLOR_CONFS
+from gui.utils import VoxelData, Model, ColorConf, ColorConfGroup
 from network.network_grid import NetworkGrid
 from network.robot import Robot
-from network.routing_cube import RoutingCube
+from network.routing_cube import NodeDiagnostics, RoutingCube
 from network.sim.recipe import Recipe
-
-NODE_COLOR_CONF = {
-    "num_pkts_received" : ColorConfGroup([
-        ColorGradient(
-            priority=0,
-            min_color=ColorNormalizer(None, 255, None),
-            max_color=ColorNormalizer(255, None, None),
-            ref_range_min=1,
-            ref_range_max=150
-        ),
-        ColorConditional(
-            priority=1,
-            on_color=ColorNormalizer(255, 255, 255),
-            off_color=ColorNormalizer.NULL,
-            condition=lambda num_pkts : num_pkts == 0
-        )
-    ]),
-    "num_pkts_dropped" : ColorConditional(
-        priority=0,
-        on_color=ColorNormalizer(255, None, None),
-        off_color=ColorNormalizer(None, 255, None),
-        condition=lambda num_pkts : num_pkts > 0
-    ),
-    "show_pkt_flow" : ColorConfGroup([
-        # Red if has packet, blue and transparent otherwise
-        ColorConditional(
-            priority=0,
-            on_color=ColorNormalizer(255, None, None),
-            off_color=ColorNormalizer(None, None, 255, 128),
-            condition=lambda cube_flow_data : cube_flow_data[0]
-        ),
-        # Green and opaque if robot, overridden by lower priority rule otherwise
-        ColorConditional(
-            priority=1,
-            on_color=ColorNormalizer(0, 255, 0, 255),
-            off_color=ColorNormalizer.NULL,
-            condition=lambda cube_flow_data : cube_flow_data[1]
-        ),
-    ])
-}
 
 
 class RoutingCubeVoxelData(VoxelData):
-    # TODO (placeholder) condition : typing.Callable[[RoutingCube], bool]|None = None
-    EXTRA_METRICS = ["show_pkt_flow"]
+    """
+    Requires that any color configurations used have the function signature given by
+    COLOR_CONF_EVAL_FUNC.
+    """
+    
+    COLOR_CONF_EVAL_FUNC: typing.TypeAlias = typing.Callable[[NodeDiagnostics], typing.Any]
 
 
-    def __init__(self, cube:RoutingCube, color_confs:dict[str, ColorConf|ColorConfGroup]):
+    def __init__(self, cube:RoutingCube, color_conf:ColorConf|ColorConfGroup):
         super().__init__(cube.position)
         self.diagnostics = cube.stats
-        self.cube_has_pkt = cube.has_packet()
-
-        for metric in color_confs.keys():
-            if metric not in RoutingCubeVoxelData.EXTRA_METRICS:
-                # Intentionally allow AttributeError with any invalid metric
-                self._get_metric_value(metric)
-
-        self.color_confs = color_confs
-
-
-    def _get_metric_value(self, metric:str) -> typing.Any:
-        if metric == "show_pkt_flow":
-            return self.cube_has_pkt, self.diagnostics.is_robot
-
-        try:
-            return getattr(self.diagnostics, metric)
-        except AttributeError as e:
-            e.add_note(f"'{metric}' is an invalid metric for RoutingCubeVoxelData")
-            raise e
+        self.color_conf = color_conf
     
 
-    def facecolor(self, metric:str) -> tuple[float,float,float,float]:
-        value = self._get_metric_value(metric)
-        
-        try:
-            conf = self.color_confs[metric]
-        except KeyError as e:
-            e.add_note(f"No color configuration provided for metric '{metric}' in RoutingCubeVoxelData")
-            raise e
-        
-        return conf(value).vals()
+    def facecolor(self) -> tuple[float,float,float,float]:
+        colors = self.color_conf(self.diagnostics)
+        return colors.vals()
 
 
 class NetGridPresenter(Model):
@@ -122,9 +62,14 @@ class NetGridPresenter(Model):
         return self.dimensions
 
 
-    def get_node_voxeldata(self) -> list[RoutingCubeVoxelData]:
+    def get_node_voxeldata(self, mode:str) -> list[RoutingCubeVoxelData]:
+        if mode not in VALID_COLOR_CONFS:
+            raise ValueError(f"Invalid node color configuration '{mode}'")
+
         nodes = self.netgrid.node_list
-        return [RoutingCubeVoxelData(node, NODE_COLOR_CONF) for node in nodes]
+        color_conf = NODE_COLOR_CONFS[mode]
+
+        return [RoutingCubeVoxelData(node, color_conf) for node in nodes] 
     
 
     # TODO move to GUI
