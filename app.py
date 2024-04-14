@@ -6,7 +6,7 @@ author: Mark Danza
 Initializes and runs the network simulator and matplotlib GUI.
 
 Example execution:
-$ python app.py bmf -n data/networks/net1.txt -r data/recipes/net1_1.txt -s 3
+$ python app.py bmf -n data/networks/net1.txt -r data/recipes/net1_1.txt -s 3 -c pkt-flow
 """
 
 import argparse
@@ -15,6 +15,7 @@ import sys
 
 import matplotlib.pyplot as plt
 
+from gui.color_conf import VALID_COLOR_CONFS
 from gui.gui import PlotGUI
 from gui.netgrid_model import NetGridPresenter
 from network.network_grid import NetworkGrid
@@ -38,7 +39,7 @@ def _get_argparser() -> argparse.ArgumentParser:
         default="template",
         type=str,
         choices=list(routing_algos.keys()),
-        help="Routing algorithm to use"
+        help="Routing algorithm to use."
     )
     parser.add_argument(
         "--network", "--net", "-n",
@@ -60,6 +61,13 @@ def _get_argparser() -> argparse.ArgumentParser:
         type=int,
         required=False,
         help="Network size, which is used to determine the maximum coordinates displayed."
+    )
+    parser.add_argument(
+        "--colormode", "-c",
+        default="pkt-flow",
+        type=str,
+        choices=VALID_COLOR_CONFS,
+        help="Display color mode to use."
     )
     return parser
 
@@ -105,7 +113,7 @@ def main(argv):
     universe_dimensions = (cliargs.size, cliargs.size, cliargs.size)
 
     model = NetGridPresenter(simulator, universe_dimensions, recipe)
-    ui = PlotGUI(universe_dimensions, model)
+    ui = PlotGUI(model, universe_dimensions, cliargs.colormode)
     model.add_observer(ui)
 
     plt.show()

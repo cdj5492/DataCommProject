@@ -41,9 +41,10 @@ class PlotGUI(Observer):
     GUI class.
     """
     
-    def __init__(self, dimensions:tuple[int,int,int], model:Model):
-        self.dimensions = dimensions # Universe dimensions
+    def __init__(self, model:Model, dimensions:tuple[int,int,int], colormode:str):
         super().__init__(model)      # Connection with simulator
+        self.dimensions = dimensions # Universe dimensions
+        self.colormode = colormode   # Node color configuration
 
         self.fig, self.ax = init_matplotlib() # Figure and axis for voxel array
 
@@ -58,15 +59,13 @@ class PlotGUI(Observer):
         self.btn_run.on_clicked(self.run)
         # self.btn_skip_to_end = Button(ax_skip_to_end_btn, "Skip to End")
         # self.btn_skip_to_end.on_clicked(self.skip_to_end)
-
-        self.colormode = "pkt-flow" # TODO get rid of magic value
     
 
     def plot_voxels(self, colormode:str):
         """
         Re-plot the main axis.
 
-        :param colormode: _description_
+        :param colormode: node color configuration to use
         """
         self.ax.cla() # Clear main axis
 
