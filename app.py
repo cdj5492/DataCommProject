@@ -57,7 +57,7 @@ def _get_argparser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--size", "-s",
-        default=10,
+        default=0,
         type=int,
         required=False,
         help="Network size, which is used to determine the maximum coordinates displayed."
@@ -72,15 +72,17 @@ def _get_argparser() -> argparse.ArgumentParser:
     return parser
 
 
-def init_simulator(routing_algo_name:str, net_file_path:os.PathLike|None=None) -> NetworkGrid:
+def init_simulator(routing_algo_name:str, net_file_path:os.PathLike|None=None) -> tuple[NetworkGrid, tuple[int,int,int]]:
     """
     Initialize a NetworkGrid and populate it with the nodes specified in the given
     network file.
 
     :param routing_algo_name: string identifier of routing algorithm to use
     :param net_file_path: optional path to file containing network node information
-    :return: network simulator object
+    :return: network simulator object, tuple of universe dimensions for plotting
     """
+    max_x, max_y, max_z = 0, 0, 0
+
     # Instantiate routing and robot algorithm classes
     routing_alg_t, robo_alg_t = routing_algos[routing_algo_name]
     routing_alg, robo_alg = routing_alg_t(), robo_alg_t()
@@ -95,7 +97,15 @@ def init_simulator(routing_algo_name:str, net_file_path:os.PathLike|None=None) -
             x, y, z = cube.position
             grid.add_node(x, y, z, cube)
 
-    return grid
+            # Track maximum cube coordinates
+            if x > max_x:
+                max_x = x
+            if y > max_y:
+                max_y = y
+            if z > max_z:
+                max_z = z
+
+    return grid, (max_x+1, max_y+1, max_z+1)
 
 
 def main(argv):
@@ -103,19 +113,23 @@ def main(argv):
     parser = _get_argparser()
     cliargs = parser.parse_args(argv)
 
-    # Initialization
-    simulator = init_simulator(cliargs.algorithm, cliargs.network)
+    # Simulation backend initialization
+    simulator, universe_dimensions = init_simulator(cliargs.algorithm, cliargs.network)
     if cliargs.recipe is not None:
         recipe = Recipe.from_file(cliargs.recipe)
     else:
         recipe = None
 
-    universe_dimensions = (cliargs.size, cliargs.size, cliargs.size)
+    # Override automatically determined dimensions with user-specified dimensions
+    if any([cliargs.size > d for d in universe_dimensions]):
+        universe_dimensions = (cliargs.size, cliargs.size, cliargs.size)
 
+    # GUI frontend initialization
     model = NetGridPresenter(simulator, universe_dimensions, recipe)
     ui = PlotGUI(model, universe_dimensions, cliargs.colormode)
     model.add_observer(ui)
 
+    # Give control to matplotlib
     plt.show()
 
 
