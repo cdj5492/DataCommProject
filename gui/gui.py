@@ -67,9 +67,6 @@ class PlotGUI(Observer):
         # Set up text boxes
         self.txt_cycles = TextBox(ax_cycles_txt, "Cycles", initial=str(self.run_cycles))
         self.txt_cycles.on_text_change(self._set_run_cycles)
-
-        # Set up mouse events
-        # self.fig.canvas.mpl_connect("pick_event", self._pick_voxel)
     
 
     def plot_voxels(self, colormode:str):
@@ -101,12 +98,6 @@ class PlotGUI(Observer):
             self.run_cycles = int(self.txt_cycles.text)
         except ValueError:
             self.run_cycles = 0
-
-
-    # def _pick_voxel(self, event):
-    #     for coords, voxel in self.voxels.items():
-    #         if voxel == event.artist:
-    #             print(coords)
 
 
     def next(self, event):
