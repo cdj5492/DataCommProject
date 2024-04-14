@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from matplotlib.figure import Figure
-from matplotlib.widgets import Button
+from matplotlib.widgets import Button, TextBox
 
 from gui.utils import Model, Observer
 
@@ -47,10 +47,14 @@ class PlotGUI(Observer):
         self.colormode = colormode   # Node color configuration
 
         self.fig, self.ax = init_matplotlib() # Figure and axis for voxel array
+        self.voxels = dict()   # For return value of ax.voxels()
+        self.run_cycles = 1000 # Number of cycles to run for
 
-        ax_run_btn = self.fig.add_axes([0.75, 0.08, 0.10, 0.075]) # These axes define the button locations and sizes
+        # These axes define the widget locations and sizes
+        ax_run_btn = self.fig.add_axes([0.75, 0.08, 0.10, 0.075])
         ax_step_btn = self.fig.add_axes([0.86, 0.08, 0.10, 0.075])
         # ax_skip_to_end_btn = self.fig.add_axes([0.7, 0.0, 0.15, 0.075])
+        ax_cycles_txt = self.fig.add_axes([0.75, 0.16, 0.10, 0.03])
 
         # Set up buttons
         self.btn_step = Button(ax_step_btn, "Step")
@@ -59,6 +63,13 @@ class PlotGUI(Observer):
         self.btn_run.on_clicked(self.run)
         # self.btn_skip_to_end = Button(ax_skip_to_end_btn, "Skip to End")
         # self.btn_skip_to_end.on_clicked(self.skip_to_end)
+
+        # Set up text boxes
+        self.txt_cycles = TextBox(ax_cycles_txt, "Cycles", initial=str(self.run_cycles))
+        self.txt_cycles.on_text_change(self._set_run_cycles)
+
+        # Set up mouse events
+        # self.fig.canvas.mpl_connect("pick_event", self._pick_voxel)
     
 
     def plot_voxels(self, colormode:str):
@@ -80,8 +91,22 @@ class PlotGUI(Observer):
             voxels[x,y,z] = 1
             facecolors[x,y,z] = data.facecolor()
         
-        self.ax.voxels(voxels, facecolors=facecolors, edgecolor='k') # Draw voxels on main axis
+        # Draw voxels on main axis
+        self.voxels = self.ax.voxels(voxels, facecolors=facecolors, edgecolor='k', picker=True)
         plt.draw()
+
+
+    def _set_run_cycles(self, event):
+        try:
+            self.run_cycles = int(self.txt_cycles.text)
+        except ValueError:
+            self.run_cycles = 0
+
+
+    # def _pick_voxel(self, event):
+    #     for coords, voxel in self.voxels.items():
+    #         if voxel == event.artist:
+    #             print(coords)
 
 
     def next(self, event):
@@ -99,7 +124,7 @@ class PlotGUI(Observer):
 
         :param event: unused
         """
-        self._model.run()
+        self._model.run(num_cycles=self.run_cycles)
 
 
     def update(self):
