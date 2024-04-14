@@ -70,26 +70,6 @@ class NetGridPresenter(Model):
         color_conf = NODE_COLOR_CONFS[mode]
 
         return [RoutingCubeVoxelData(node, color_conf) for node in nodes] 
-    
-
-    # TODO move to GUI
-    def get_node_facecolors(self) -> np.ndarray[str]:
-        """
-        Nodes containing packets are colored red. Nodes representing robot connection
-        points are colored green. All other nodes are blue.
-        """
-        node_map = self.netgrid.node_map
-        node_facecolors = np.zeros(self.dimensions, dtype=str)
-
-        for (x,y,z), node in node_map.items():
-            if node.has_packet():
-                node_facecolors[x,y,z] = COLOR_RED
-            elif _node_is_robot(node, self.netgrid.robot_list):
-                node_facecolors[x,y,z] = COLOR_GREEN
-            else:
-                node_facecolors[x,y,z] = COLOR_BLUE 
-
-        return node_facecolors
 
 
     def next_state(self):
