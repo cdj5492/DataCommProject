@@ -63,10 +63,9 @@ class PlotGUI(Observer):
     GUI class.
     """
     
-    def __init__(self, model:Model, dimensions:tuple[int,int,int], colormode:str):
-        super().__init__(model)      # Connection with simulator
-        self.dimensions = dimensions # Universe dimensions
-        self.colormode = colormode   # Node color configuration
+    def __init__(self, model:Model, colormode:str):
+        super().__init__(model)    # Connection with simulator
+        self.colormode = colormode # Node color configuration
 
         self.fig, self.ax = init_matplotlib() # Figure and axis for voxel array
         self.voxels = dict()                  # For return value of ax.voxels()
@@ -100,6 +99,7 @@ class PlotGUI(Observer):
         self.btn_run = Button(ax_run_btn, "Run")
         self.btn_run.on_clicked(self.run)
         self.btn_restart = Button(ax_restart_btn, "Reset")
+        self.btn_restart.on_clicked(self.restart)
         self.btn_add = Button(ax_add_btn, "Add Node")
         self.btn_add.on_clicked(self.user_add_node)
         self.btn_remove = Button(ax_remove_btn, "Remove Node")
@@ -124,8 +124,6 @@ class PlotGUI(Observer):
 
         :param colormode: node color configuration to use
         """
-        self.ax.cla() # Clear main axis
-
         # Init arrays for voxel positions and face colors
         net_x, net_y, net_z = self._model.get_network_dimensions()
         voxels = np.zeros((net_x, net_y, net_z))
@@ -142,7 +140,7 @@ class PlotGUI(Observer):
         
         # Draw voxels on main axis
         self.voxels = self.ax.voxels(voxels, facecolors=facecolors, edgecolor='k', picker=True)
-        plt.draw()
+        plt.draw_all()
 
 
     def get_user_coords(self) -> tuple[int,int,int]|tuple[None,None,None]:
@@ -188,6 +186,10 @@ class PlotGUI(Observer):
         :param event: unused
         """
         self._model.next_state()
+
+
+    def restart(self, event):
+        pass
 
 
     def run(self, event):

@@ -126,7 +126,7 @@ def main(argv):
 
     # GUI frontend initialization
     model = NetGridPresenter(simulator, universe_dimensions, recipe)
-    ui = PlotGUI(model, universe_dimensions, cliargs.colormode)
+    ui = PlotGUI(model, cliargs.colormode)
     model.add_observer(ui)
 
     # Give control to matplotlib
