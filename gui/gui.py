@@ -10,7 +10,6 @@ See example:
 https://matplotlib.org/stable/plot_types/3D/voxels_simple.html#sphx-glr-plot-types-3d-voxels-simple-py
 """
 
-import dataclasses
 import typing
 
 import matplotlib.pyplot as plt
@@ -19,7 +18,7 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.widgets import Button, TextBox, CheckButtons
 
-from gui.utils import Model, Observer
+from gui.utils import Model, Observer, GUIContainer
 
 voxel_pos_t: typing.TypeAlias = tuple[int,int,int]
 """Typemark for voxel coordinates."""
@@ -37,27 +36,6 @@ def init_matplotlib() -> tuple[Figure, typing.Any]:
     return fig, ax
 
 
-@dataclasses.dataclass
-class PositionHelper:
-    edge : float = 0.06
-    bottom : float = 0.01
-    width : float = 0.14
-    height : float = 0.025
-    padding : float = 0.007
-
-
-    def coords(self, col_from_left:int=0, row_from_bottom:int=0, split_num:int=1, split_of:int=1):
-        edge = self.edge + col_from_left*(self.width + self.padding)
-        bottom = self.bottom + row_from_bottom*(self.height + self.padding)
-        width = (self.width - (split_of-1)*self.padding)/split_of
-        height = self.height
-
-        if split_num > 1:
-            edge += (split_num - 1)*(width + self.padding)
-
-        return edge, bottom, width, height
-
-
 class PlotGUI(Observer):
     """
     GUI class.
@@ -70,28 +48,28 @@ class PlotGUI(Observer):
         self.fig, self.ax = init_matplotlib() # Figure and axis for voxel array
         self.voxels = dict()                  # For return value of ax.voxels()
 
-        # Other attributes used for user input
-        self.run_cycles = 1000   # Number of cycles to run for
-        self.ignorepause = False # Wether to ignore PAUSE commands in recipes
-        self.user_node_x, self.user_node_y, self.user_node_z = 0, 0, 0
-        self.user_node_robot = False
-
-        ax_pos_helper = PositionHelper()
+        # Define containers to help with widget placement
+        left_container = GUIContainer(0.06, 0.20, 0.09, 0.025, 0.007)
+        right_edge = left_container.rect(1, 0)[0]
+        right_container = GUIContainer(right_edge, left_container.top, 0.14, left_container.height, left_container.padding)
 
         # These axes define the widget locations and sizes
-        ax_run_btn = self.fig.add_axes(ax_pos_helper.coords(0, 4))
-        ax_cycles_txt = self.fig.add_axes(ax_pos_helper.coords(0, 3))
-        ax_colormode_txt = self.fig.add_axes(ax_pos_helper.coords(0, 2))
-        ax_ignorepause_chk = self.fig.add_axes(ax_pos_helper.coords(0, 1))
-        ax_restart_btn = self.fig.add_axes(ax_pos_helper.coords(0, 0))
+        left_container_axes = list()
+        # Add five axes in column 0 of the left container
+        for _ in range(5):
+            left_container_axes.append(
+                left_container.add_axes_to_fig(self.fig, column=0)
+            )
+        # Unpack the left container axes for use in defining widgets
+        ax_run_btn, ax_cycles_txt, ax_colormode_txt, ax_ignorepause_chk, ax_restart_btn = left_container_axes
         
-        ax_step_btn = self.fig.add_axes(ax_pos_helper.coords(1, 4))
-        ax_x_txt = self.fig.add_axes(ax_pos_helper.coords(1, 3, split_num=1, split_of=3))
-        ax_y_txt = self.fig.add_axes(ax_pos_helper.coords(1, 3, split_num=2, split_of=3))
-        ax_z_txt = self.fig.add_axes(ax_pos_helper.coords(1, 3, split_num=3, split_of=3))
-        ax_add_btn = self.fig.add_axes(ax_pos_helper.coords(1, 2, split_num=1, split_of=2))
-        ax_remove_btn = self.fig.add_axes(ax_pos_helper.coords(1, 2, split_num=2, split_of=2))
-        ax_robot_chk = self.fig.add_axes(ax_pos_helper.coords(1, 1))
+        # Add an axis to column 0 of the right container
+        ax_step_btn = right_container.add_axes_to_fig(self.fig, column=0)
+        # Add two rows of split axes to column 0 of the right container
+        ax_x_txt, ax_y_txt, ax_z_txt = right_container.add_axes_to_fig(self.fig, column=0, split=3)
+        ax_add_btn, ax_remove_btn = right_container.add_axes_to_fig(self.fig, column=0, split=2)
+        # Add another axis to column 0 of the right container
+        ax_robot_chk = right_container.add_axes_to_fig(self.fig, column=0)
         
         # Set up buttons
         self.btn_step = Button(ax_step_btn, "Step")
@@ -106,7 +84,7 @@ class PlotGUI(Observer):
         self.btn_remove.on_clicked(self.user_remove_node)
 
         # Set up text boxes
-        self.txt_cycles = TextBox(ax_cycles_txt, "Cycles", initial=str(self.run_cycles))
+        self.txt_cycles = TextBox(ax_cycles_txt, "Cycles", initial=str(1000))
         self.txt_colormode = TextBox(ax_colormode_txt, "Color Mode", initial=self.colormode)
         self.txt_colormode.on_submit(self.update)
         self.txt_x = TextBox(ax_x_txt, "X", initial="0")
@@ -124,6 +102,9 @@ class PlotGUI(Observer):
 
         :param colormode: node color configuration to use
         """
+        # Clear main axis
+        self.ax.cla()
+
         # Init arrays for voxel positions and face colors
         net_x, net_y, net_z = self._model.get_network_dimensions()
         voxels = np.zeros((net_x, net_y, net_z))
@@ -140,7 +121,7 @@ class PlotGUI(Observer):
         
         # Draw voxels on main axis
         self.voxels = self.ax.voxels(voxels, facecolors=facecolors, edgecolor='k', picker=True)
-        plt.draw_all()
+        plt.draw()
 
 
     def get_user_coords(self) -> tuple[int,int,int]|tuple[None,None,None]:

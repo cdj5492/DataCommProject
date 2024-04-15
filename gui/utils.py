@@ -4,13 +4,19 @@ file: utils.py
 author: Mark Danza
 
 Contains interface-like class definitions for the Observer and Model types. Also contains
-the node color configuration framework for defining GUI color modes.
+the node color configuration framework for defining GUI color modes and a helper class
+for setting up the matplotlib GUI.
 """
 
 import dataclasses
 import typing
 
 import matplotlib.colors
+from matplotlib.figure import Figure
+
+#########################################################################################
+# MVC Interface
+#########################################################################################
 
 
 class Observer:
@@ -151,6 +157,11 @@ class Model:
         :raises NotImplementedError: if not implemented in a subclass
         """
         raise NotImplementedError()
+    
+
+#########################################################################################
+# Node Color Configuration Framework
+#########################################################################################
 
 
 class ColorVals:
@@ -396,3 +407,117 @@ class ColorGradient(ColorConf):
                 gradient_color.append(None)
 
         return ColorVals(*gradient_color)
+    
+
+#########################################################################################
+# GUI Utilities
+#########################################################################################
+    
+
+class GUIContainer:
+    """
+    Helper class for grouping together the axes for Matplotlib widgets and automatically
+    calculating the "rects" (left, bottom, width, height tuples) for instantiating new
+    axes. The user provides initial axes dimensions when instantiating this class. Then,
+    this class can be used to "append" axes to a figure in the spaces represented by
+    columns of the container. Each container column represents a vertical section of
+    axes regions, where each row represents a rect of the specified width and height.
+    """
+
+    def __init__(self, edge:float, top:float, width:float, height:float, padding:float):
+        """
+        Initialize a container representing a region in the plot. All arguments should be
+        in the range [0.0, 1.0].
+
+        :param edge: coordinate of left edge of container region
+        :param top: coordinate of top edge of container region
+        :param width: coordinate representing the width of the container region's rects
+                      (provides the width of each axes within the container)
+        :param height: coordinate representing the height of the container region's rects
+                       (provides the height of each axes within the container)
+        :param padding: padding amount between rects (between columns and rows of the
+                        container)
+        """
+        self.edge = edge
+        self.top = top
+        self.width = width
+        self.height = height
+        self.padding = padding
+        self._columns = dict()
+
+
+    def rect(self, col_from_left:int=0, row_from_top:int=0, split_num:int=1, split_of:int=1):
+        """
+        Get the rect coordinates of the subregion of the container represented by the
+        given column and row.
+
+        The split_num and split_of parameters may be used to split a container rect into
+        a number of smaller rects given by split_of. If split_of > 1, the split_num
+        parameter then specifies the split subregion, starting from 1 on the left.
+
+        :param col_from_left: container column index, starting from 0 on the left
+        :param row_from_top: container row index, starting from 0 at the top
+        :param split_num: split number <= split_of, starting from 1 on the left
+        :param split_of: number of subrects to split this rect into, >= 1
+        :return: edge, bottom, width, height
+        """
+        edge = self.edge + col_from_left*(self.width + self.padding)
+        bottom = self.top - (row_from_top + 1)*(self.height + self.padding)
+        width = (self.width - (split_of-1)*self.padding)/split_of
+        height = self.height
+
+        # Move edge to the right to account for the split
+        if split_num > 1:
+            edge += (split_num - 1)*(width + self.padding)
+
+        return edge, bottom, width, height
+    
+
+    def get_next_rects(self, column:int=0, split:int=1) -> list[tuple[float,float,float,float]]:
+        """
+        Calculates the next rect or rects that should occur in the given column. This is
+        a convenience method so that the user need not call rect() to get each individual
+        rect in a column of the container.
+
+        If split > 1, this method calculates all the subrects of the split region and
+        returns them in a list. Otherwise, a single rect will be returned in a list.
+
+        :param column: container column index, starting from 0 on the left
+        :param split: number of subrects to split the next rect into, >= 1
+        :return: list of rects
+        """
+        # Columns are tracked internally in a dict, indexed by the column number
+        if column not in self._columns:
+            self._columns[column] = dict()
+        axis_col = self._columns[column]
+
+        # Obtain the next row number in the specified column
+        row = len(axis_col)
+
+        # Calculate the rects in this row
+        rects = list()
+        for i in range(1, split+1):
+            rects.append(self.rect(column, row, split_num=i, split_of=split))
+
+        # Internally store and return the calculated rects
+        axis_col[row] = rects
+        return rects
+    
+
+    def add_axes_to_fig(self, fig:Figure, column:int=0, split:int=1) -> typing.Any|list:
+        """
+        Convenience method that calls get_next_rects() and adds axes to the given figure
+        using the resulting rects.
+
+        :param fig: matplotlib figure
+        :param column: container column index, starting from 0 on the left
+        :param split: number of subrects to split the next rect into, >= 1
+        :return: matplotlib axes object (or a list of them) added to the figure
+        """
+        axes = list()
+        for rect in self.get_next_rects(column, split):
+            axes.append(fig.add_axes(rect))
+
+        if len(axes) == 1:
+            axes = axes[0]
+        return axes
