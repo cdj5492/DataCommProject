@@ -108,7 +108,9 @@ class NetGridPresenter(Model):
 
 
     def restart(self):
-        # TODO Currently no way to reset to initial state
+        """
+        This method is unused because the GUI handles restarting.
+        """
         pass
 
 

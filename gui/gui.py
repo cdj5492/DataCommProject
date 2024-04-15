@@ -51,6 +51,17 @@ class PlotGUI(Observer):
         network_file:os.PathLike|None=None,
         recipe_file:os.PathLike|None=None
     ):
+        """
+        Initialize the matplotlib GUI. The caller must use the add_observer() method and
+        pass in the given model to ensure this UI is updated by the model.
+
+        :param model: network presenter model
+        :param colormode: initial node color configuration
+        :param routing_algo_name: routing algorithm name in case of restart
+        :param network_file: optional network file path in case of restart
+        :param recipe_file: optional recipe file path in case of restart
+        :return: matplotlib GUI
+        """
         super().__init__(model)    # Connection with simulator
         self.colormode = colormode # Node color configuration
         self.routing_algo_name = routing_algo_name
@@ -137,6 +148,13 @@ class PlotGUI(Observer):
 
 
     def get_user_coords(self) -> tuple[int,int,int]|tuple[None,None,None]:
+        """
+        Helper method for reading the x,y,z coordinates the user has typed into the
+        associated text fields.
+
+        :return: x,y,z node coordinates or None,None,None if any of the user coordinates
+        are invalid
+        """
         x, y, z = self.txt_x.text, self.txt_y.text, self.txt_z.text
         vals = list()
         for val in (x, y, z):
@@ -151,6 +169,12 @@ class PlotGUI(Observer):
 
 
     def user_add_node(self, event):
+        """
+        Add a node to the network at the user-specified coordinates. May be a robot node
+        if the robot check box is checked.
+
+        :param event: unused
+        """
         # Get user input from relevant widgets
         x, y, z = self.get_user_coords()
         if x is None:
@@ -163,6 +187,11 @@ class PlotGUI(Observer):
 
 
     def user_remove_node(self, event):
+        """
+        Remove a node from the network at the user-specified coordinates.
+
+        :param event: unused
+        """
         # Get user input from relevant widgets
         x, y, z = self.get_user_coords()
         if x is None:
