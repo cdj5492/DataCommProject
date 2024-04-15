@@ -12,14 +12,14 @@ import typing
 import numpy as np
 
 from gui.color_conf import NODE_COLOR_CONFS, VALID_COLOR_CONFS
-from gui.utils import VoxelData, Model, ColorConf, ColorConfGroup
+from gui.utils import NodeData, Model, ColorConf, ColorConfGroup
 from network.network_grid import NetworkGrid
 from network.robot import Robot
 from network.routing_cube import NodeDiagnostics, RoutingCube
 from network.sim.recipe import Recipe
 
 
-class RoutingCubeVoxelData(VoxelData):
+class RoutingCubeVoxelData(NodeData):
     """
     Requires that any color configurations used have the function signature given by
     COLOR_CONF_EVAL_FUNC.
@@ -123,3 +123,16 @@ class NetGridPresenter(Model):
 
             # Update observers with resulting end state
             self.alert_observers()
+
+    
+    def add_node(self, x:int, y:int, z:int, robot:bool=False):
+        if robot:
+            self.netgrid.add_robot(x, y, z)
+        else:
+            self.netgrid.add_node(x, y, z)
+        self.alert_observers()
+
+
+    def remove_node(self, x:int, y:int, z:int):
+        self.netgrid.remove_node(x, y, z)
+        self.alert_observers()
