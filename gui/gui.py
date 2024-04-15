@@ -19,10 +19,9 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.widgets import Button, TextBox, CheckButtons
 
+from app.initialization import init_presenter
 from gui.netgrid_model import NetGridPresenter
 from gui.utils import Model, Observer, GUIContainer
-from network.initializer import init_simulator
-from network.sim.recipe import Recipe
 
 voxel_pos_t: typing.TypeAlias = tuple[int,int,int]
 """Typemark for voxel coordinates."""
@@ -188,13 +187,8 @@ class PlotGUI(Observer):
 
         :param event: unused
         """
-        new_netgrid, _ = init_simulator(self.routing_algo_name, self.network_file)
-        universe_dimensions = self._model.get_network_dimensions()
-        if self.recipe_file is not None:
-            new_recipe = Recipe.from_file(self.recipe_file)
-        else:
-            new_recipe = None
-        self._model = NetGridPresenter(new_netgrid, universe_dimensions, new_recipe)
+        size = self._model.get_network_dimensions()
+        self._model = init_presenter(self.routing_algo_name, self.network_file, self.recipe_file, size[0])
         self._model.add_observer(self)
 
 

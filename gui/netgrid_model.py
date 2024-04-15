@@ -9,7 +9,7 @@ for any network simulator Model.
 
 import typing
 
-from gui.color_conf import NODE_COLOR_CONFS, VALID_COLOR_CONFS
+from app.support import NODE_COLOR_CONFS, VALID_COLOR_CONFS
 from gui.utils import NodeUIData, Model, ColorConf, ColorConfGroup
 from network.network_grid import NetworkGrid
 from network.routing_cube import NodeDiagnostics, RoutingCube

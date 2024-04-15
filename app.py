@@ -14,12 +14,9 @@ import sys
 
 import matplotlib.pyplot as plt
 
-from gui.color_conf import VALID_COLOR_CONFS
+from app.initialization import init_presenter
+from app.support import VALID_ROUTING_ALGOS, VALID_COLOR_CONFS
 from gui.gui import PlotGUI
-from gui.netgrid_model import NetGridPresenter
-from network.sim.recipe import Recipe
-from network.initializer import init_simulator
-from routing_algorithms.support import VALID_ROUTING_ALGOS
 
 
 def _get_argparser() -> argparse.ArgumentParser:
@@ -67,19 +64,8 @@ def main(argv):
     parser = _get_argparser()
     cliargs = parser.parse_args(argv)
 
-    # Simulation backend initialization
-    simulator, universe_dimensions = init_simulator(cliargs.algorithm, cliargs.network)
-    if cliargs.recipe is not None:
-        recipe = Recipe.from_file(cliargs.recipe)
-    else:
-        recipe = None
-
-    # Override automatically determined dimensions with user-specified dimensions
-    if any([cliargs.size > d for d in universe_dimensions]):
-        universe_dimensions = (cliargs.size, cliargs.size, cliargs.size)
-
     # GUI frontend initialization
-    model = NetGridPresenter(simulator, universe_dimensions, recipe)
+    model = init_presenter(cliargs.algorithm, cliargs.network, cliargs.recipe, cliargs.size)
     ui = PlotGUI(model, cliargs.colormode, cliargs.algorithm, cliargs.network, cliargs.recipe)
     model.add_observer(ui)
 

@@ -42,7 +42,6 @@ import os
 import typing
 
 from network.network_grid import NetworkGrid
-from network.faces import Direction
 
 
 class RecipeComm(enum.Enum):

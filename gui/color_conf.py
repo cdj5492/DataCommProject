@@ -6,7 +6,7 @@ author: Mark Danza
 To add a new color configuration:
  1. Define any helper functions needed by that configuration if they do not exist already.
  2. Define the color configuration as a ColorConf subclass or ColorConfGroup instance.
- 3. Add the color configuration to the NODE_COLOR_CONFS dictionary with a unique name.
+ 3. Add the color configuration to the NODE_COLOR_CONFS dictionary in app.support.py.
 Notes about creating color configurations:
  - Use ColorNormalizer, not ColorVals to specify colors.
  - In general, use None instead of 0 as a color value.
@@ -22,7 +22,7 @@ def _no_pkts_received(diagnostics:NodeDiagnostics) -> bool:
 
 
 # Color configuration that shows a gradient for received packets
-_CONF_NUM_PKTS_RECEIVED = ColorConfGroup([
+CONF_NUM_PKTS_RECEIVED = ColorConfGroup([
     # Apply a gradient from green to red based on the number of packets a node receives
     ColorGradient(
         priority=0,
@@ -54,7 +54,7 @@ def _any_pkts_dropped(diagnostics:NodeDiagnostics) -> bool:
 
 
 # Color a node red if it has dropped any packets, or green otherwise
-_CONF_ANY_PKTS_DROPPED = ColorConditional(
+CONF_ANY_PKTS_DROPPED = ColorConditional(
     priority=0,
     on_color=ColorNormalizer(255, None, None),  # Red
     off_color=ColorNormalizer(None, 255, None), # Green
@@ -63,7 +63,7 @@ _CONF_ANY_PKTS_DROPPED = ColorConditional(
 
 
 # Color configuration that shows packet flow through the network while stepping
-_CONF_PKT_FLOW = ColorConfGroup([
+CONF_PKT_FLOW = ColorConfGroup([
     # Color a node red if it has a packet, or blue and transparent otherwise
     ColorConditional(
         priority=0,
@@ -79,14 +79,3 @@ _CONF_PKT_FLOW = ColorConfGroup([
         condition=NodeDiagnostics.get_is_robot
     ),
 ])
-
-
-NODE_COLOR_CONFS = {
-    "pkt-rx" : _CONF_NUM_PKTS_RECEIVED,
-    "pkt-drop" : _CONF_ANY_PKTS_DROPPED,
-    "pkt-flow" : _CONF_PKT_FLOW,
-}
-"""All supported node color configurations."""
-
-VALID_COLOR_CONFS = set(NODE_COLOR_CONFS.keys())
-"""String names of valid color modes."""
