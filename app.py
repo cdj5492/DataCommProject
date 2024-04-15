@@ -10,7 +10,6 @@ $ python app.py bmf -n data/networks/net1.txt -r data/recipes/net1_1.txt -c pkt-
 """
 
 import argparse
-import os
 import sys
 
 import matplotlib.pyplot as plt
@@ -18,18 +17,9 @@ import matplotlib.pyplot as plt
 from gui.color_conf import VALID_COLOR_CONFS
 from gui.gui import PlotGUI
 from gui.netgrid_model import NetGridPresenter
-from network.network_grid import NetworkGrid
-from network.sim.file import init_routingcubes_from_file
 from network.sim.recipe import Recipe
-from routing_algorithms.bellmanford import BellmanFordRouting, BellmanFordRobot
-import routing_algorithms.template as routet
-import robot_algorithm.template as robt
-
-
-routing_algos = {
-    "template" : (routet.Template, robt.Template),
-    "bmf" : (BellmanFordRouting, BellmanFordRobot),
-}
+from network.initializer import init_simulator
+from routing_algorithms.support import VALID_ROUTING_ALGOS
 
 
 def _get_argparser() -> argparse.ArgumentParser:
@@ -38,7 +28,7 @@ def _get_argparser() -> argparse.ArgumentParser:
         "algorithm",
         default="template",
         type=str,
-        choices=list(routing_algos.keys()),
+        choices=VALID_ROUTING_ALGOS,
         help="Routing algorithm to use."
     )
     parser.add_argument(
@@ -72,42 +62,6 @@ def _get_argparser() -> argparse.ArgumentParser:
     return parser
 
 
-def init_simulator(routing_algo_name:str, net_file_path:os.PathLike|None=None) -> tuple[NetworkGrid, tuple[int,int,int]]:
-    """
-    Initialize a NetworkGrid and populate it with the nodes specified in the given
-    network file.
-
-    :param routing_algo_name: string identifier of routing algorithm to use
-    :param net_file_path: optional path to file containing network node information
-    :return: network simulator object, tuple of universe dimensions for plotting
-    """
-    max_x, max_y, max_z = 0, 0, 0
-
-    # Instantiate routing and robot algorithm classes
-    routing_alg_t, robo_alg_t = routing_algos[routing_algo_name]
-    routing_alg, robo_alg = routing_alg_t(), robo_alg_t()
-
-    # Main grid
-    grid = NetworkGrid(routing_alg, robo_alg)
-
-    if net_file_path is not None:
-        # Add nodes to the grid
-        cubes = init_routingcubes_from_file(net_file_path)
-        for cube in cubes:
-            x, y, z = cube.position
-            grid.add_node(x, y, z, cube)
-
-            # Track maximum cube coordinates
-            if x > max_x:
-                max_x = x
-            if y > max_y:
-                max_y = y
-            if z > max_z:
-                max_z = z
-
-    return grid, (max_x+1, max_y+1, max_z+1)
-
-
 def main(argv):
     # Parse CLI args
     parser = _get_argparser()
@@ -126,7 +80,7 @@ def main(argv):
 
     # GUI frontend initialization
     model = NetGridPresenter(simulator, universe_dimensions, recipe)
-    ui = PlotGUI(model, cliargs.colormode)
+    ui = PlotGUI(model, cliargs.colormode, cliargs.algorithm, cliargs.network, cliargs.recipe)
     model.add_observer(ui)
 
     # Give control to matplotlib

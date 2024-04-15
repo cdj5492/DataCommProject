@@ -10,6 +10,7 @@ See example:
 https://matplotlib.org/stable/plot_types/3D/voxels_simple.html#sphx-glr-plot-types-3d-voxels-simple-py
 """
 
+import os
 import typing
 
 import matplotlib.pyplot as plt
@@ -18,7 +19,10 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.widgets import Button, TextBox, CheckButtons
 
+from gui.netgrid_model import NetGridPresenter
 from gui.utils import Model, Observer, GUIContainer
+from network.initializer import init_simulator
+from network.sim.recipe import Recipe
 
 voxel_pos_t: typing.TypeAlias = tuple[int,int,int]
 """Typemark for voxel coordinates."""
@@ -41,9 +45,18 @@ class PlotGUI(Observer):
     GUI class.
     """
     
-    def __init__(self, model:Model, colormode:str):
+    def __init__(self,
+        model:Model,
+        colormode:str,
+        routing_algo_name:str,
+        network_file:os.PathLike|None=None,
+        recipe_file:os.PathLike|None=None
+    ):
         super().__init__(model)    # Connection with simulator
         self.colormode = colormode # Node color configuration
+        self.routing_algo_name = routing_algo_name
+        self.network_file = network_file
+        self.recipe_file = recipe_file
 
         self.fig, self.ax = init_matplotlib() # Figure and axis for voxel array
         self.voxels = dict()                  # For return value of ax.voxels()
@@ -170,7 +183,19 @@ class PlotGUI(Observer):
 
 
     def restart(self, event):
-        pass
+        """
+        Restart by initializing a new model to replace the current one.
+
+        :param event: unused
+        """
+        new_netgrid, _ = init_simulator(self.routing_algo_name, self.network_file)
+        universe_dimensions = self._model.get_network_dimensions()
+        if self.recipe_file is not None:
+            new_recipe = Recipe.from_file(self.recipe_file)
+        else:
+            new_recipe = None
+        self._model = NetGridPresenter(new_netgrid, universe_dimensions, new_recipe)
+        self._model.add_observer(self)
 
 
     def run(self, event):
