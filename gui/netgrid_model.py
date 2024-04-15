@@ -13,7 +13,7 @@ from app.support import NODE_COLOR_CONFS, VALID_COLOR_CONFS
 from gui.utils import NodeUIData, Model, ColorConf, ColorConfGroup
 from network.network_grid import NetworkGrid
 from network.routing_cube import NodeDiagnostics, RoutingCube
-from network.sim.recipe import Recipe
+from network.recipe import Recipe
 
 
 class RoutingCubeUIData(NodeUIData):

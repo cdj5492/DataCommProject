@@ -21,7 +21,7 @@ import numpy as np
 from app.support import ROUTING_ALGOS
 from gui.netgrid_model import NetGridPresenter
 from network.network_grid import NetworkGrid, RoutingCube
-from network.sim.recipe import Recipe
+from network.recipe import Recipe
 
 
 def init_routingcubes_from_file(f:os.PathLike) -> list[RoutingCube]:
