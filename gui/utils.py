@@ -6,11 +6,9 @@ author: Mark Danza
 Contains interface-like class definitions for the Observer and Model types.
 """
 
-import collections
 import dataclasses
 import typing
 
-import numpy as np
 import matplotlib.colors
 
 
@@ -36,8 +34,17 @@ class Observer:
         raise NotImplementedError()
 
 
-class VoxelData:
+class NodeData:
+    """
+    Data about a node that is used by the user interface.
+    """
+
     def __init__(self, coordinates:tuple[int,int,int]):
+        """
+        Create new node data.
+
+        :param coordinates: x,y,z coordinates of the node in the network
+        """
         self.coordinates = coordinates
 
 
@@ -70,15 +77,25 @@ class Model:
         self.alert_observers()
 
 
-    def get_network_dimensions(self) -> tuple[int,int,int]:
+    def get_network_dimensions(self, *args, **kwargs) -> tuple[int,int,int]:
+        """
+        Gets the x, y, z dimensions of the network.
+
+        :raises NotImplementedError: if not implemented in a subclass
+        """
         raise NotImplementedError()
 
 
-    def get_node_voxeldata(self) -> list[VoxelData]:
+    def get_node_voxeldata(self, *args, **kwargs) -> typing.Collection[NodeData]:
+        """
+        Gets the voxel data of the network relevant to the UI.
+
+        :raises NotImplementedError: if not implemented in a subclass
+        """
         raise NotImplementedError()
 
 
-    def next_state(self):
+    def next_state(self, *args, **kwargs) -> typing.Any:
         """
         Step the simulator and graphics to the next network state in time. 
 
@@ -89,7 +106,7 @@ class Model:
         raise NotImplementedError()
     
 
-    def restart(self):
+    def restart(self, *args, **kwargs) -> typing.Any:
         """
         Reset the simulator and graphics to the initial network state.
 
@@ -100,7 +117,7 @@ class Model:
         raise NotImplementedError()
     
 
-    def run(self, **kwargs):
+    def run(self, *args, **kwargs) -> typing.Any:
         """
         Step through the entire simulation or a subset of it and update with the final
         state.
@@ -110,10 +127,28 @@ class Model:
         :param kwargs: model-specific keyword arguments provided by the UI
         :raises NotImplementedError: if not implemented in a subclass
         """
-        # TODO 'run diagnostics' feature
-        # Running diagnostics allows the user to run the simulation for some specified
-        # number of cycles, keeping track of node metrics like number of packets
-        # processed, power consumed, collisions, etc.
+        raise NotImplementedError()
+    
+
+    def add_node(self, *args, **kwargs) -> typing.Any:
+        """
+        Add a node to the network.
+
+        REQUIREMENT: This method should call alert_observers() if it is used.
+
+        :raises NotImplementedError: if not implemented in a subclass
+        """
+        raise NotImplementedError()
+    
+
+    def remove_node(self, *args, **kwargs) -> typing.Any:
+        """
+        Remove a node from the network.
+
+        REQUIREMENT: This method should call alert_observers() if it is used.
+
+        :raises NotImplementedError: if not implemented in a subclass
+        """
         raise NotImplementedError()
 
 
