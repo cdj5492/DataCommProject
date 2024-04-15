@@ -2,6 +2,15 @@
 
 file: color_conf.py
 author: Mark Danza
+
+To add a new color configuration:
+ 1. Define any helper functions needed by that configuration if they do not exist already.
+ 2. Define the color configuration as a ColorConf subclass or ColorConfGroup instance.
+ 3. Add the color configuration to the NODE_COLOR_CONFS dictionary with a unique name.
+Notes about creating color configurations:
+ - Use ColorNormalizer, not ColorVals to specify colors.
+ - In general, use None instead of 0 as a color value.
+ - See gui.utils.ColorConfGroup for information on configuration priority.
 """
 
 from gui.utils import ColorConfGroup, ColorNormalizer, ColorConditional, ColorGradient
@@ -12,6 +21,7 @@ def _no_pkts_received(diagnostics:NodeDiagnostics) -> bool:
     return diagnostics.num_pkts_received == 0
 
 
+# Color configuration that shows a gradient for received packets
 _CONF_NUM_PKTS_RECEIVED = ColorConfGroup([
     # Apply a gradient from green to red based on the number of packets a node receives
     ColorGradient(
@@ -28,6 +38,13 @@ _CONF_NUM_PKTS_RECEIVED = ColorConfGroup([
         on_color=ColorNormalizer(255, 255, 255), # White
         off_color=ColorNormalizer.null(),        # Cede to lower priority rules
         condition=_no_pkts_received
+    ),
+    # Apply transparency if the node is a robot
+    ColorConditional(
+        priority=0,
+        on_color=ColorNormalizer(None, None, None, 128), # Transparent
+        off_color=ColorNormalizer.null(),                # Cede to lower priority rules
+        condition=NodeDiagnostics.get_is_robot
     )
 ])
 
@@ -45,6 +62,7 @@ _CONF_ANY_PKTS_DROPPED = ColorConditional(
 )
 
 
+# Color configuration that shows packet flow through the network while stepping
 _CONF_PKT_FLOW = ColorConfGroup([
     # Color a node red if it has a packet, or blue and transparent otherwise
     ColorConditional(
@@ -68,5 +86,7 @@ NODE_COLOR_CONFS = {
     "pkt-drop" : _CONF_ANY_PKTS_DROPPED,
     "pkt-flow" : _CONF_PKT_FLOW,
 }
+"""All supported node color configurations."""
 
 VALID_COLOR_CONFS = set(NODE_COLOR_CONFS.keys())
+"""String names of valid color modes."""

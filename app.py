@@ -6,7 +6,7 @@ author: Mark Danza
 Initializes and runs the network simulator and matplotlib GUI.
 
 Example execution:
-$ python app.py bmf -n data/networks/net1.txt -r data/recipes/net1_1.txt -s 3 -c pkt-flow
+$ python app.py bmf -n data/networks/net1.txt -r data/recipes/net1_1.txt -c pkt-flow
 """
 
 import argparse

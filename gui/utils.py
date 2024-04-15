@@ -3,7 +3,8 @@
 file: utils.py
 author: Mark Danza
 
-Contains interface-like class definitions for the Observer and Model types.
+Contains interface-like class definitions for the Observer and Model types. Also contains
+the node color configuration framework for defining GUI color modes.
 """
 
 import dataclasses
@@ -34,7 +35,7 @@ class Observer:
         raise NotImplementedError()
 
 
-class NodeData:
+class NodeUIData:
     """
     Data about a node that is used by the user interface.
     """
@@ -86,7 +87,7 @@ class Model:
         raise NotImplementedError()
 
 
-    def get_node_voxeldata(self, *args, **kwargs) -> typing.Collection[NodeData]:
+    def get_node_voxeldata(self, *args, **kwargs) -> typing.Collection[NodeUIData]:
         """
         Gets the voxel data of the network relevant to the UI.
 
@@ -153,11 +154,29 @@ class Model:
 
 
 class ColorVals:
+    """
+    RGBA color values. This class exists to provide a more sophisticated way for storing
+    these values together in color configurations.
+
+    This class is an iterable which iterates over its RGBA values, in that order.
+    """
+
     DEFAULT_RGB : float = 0.0
+    """Default normalized value of red, green, and blue."""
     DEFAULT_ALPHA : float = 1.0
+    """Default normalized value of alpha."""
 
 
     def __init__(self, r:float|None, g:float|None, b:float|None, a:float|None=None):
+        """
+        Create new color values. RGBA values may be any number, relative to one another.
+        These values can be normalized using a ColorNormalizer. These values may be None.
+
+        :param r: red value
+        :param g: green value
+        :param b: blue value
+        :param a: alpha value
+        """
         self.r = r
         self.g = g
         self.b = b
@@ -166,6 +185,12 @@ class ColorVals:
 
 
     def vals(self) -> tuple[float,float,float,float]:
+        """
+        Gets the RGBA values, replacing values of None with their associated default
+        values.
+
+        :return: tuple of RGBA color values
+        """
         colors = list()
         # Get rgb values or default
         for val in (self.r, self.g, self.b):
@@ -203,17 +228,38 @@ class ColorVals:
 
 
 class ColorNormalizer:
+    """
+    Encapsulates color values (a ColorVals instance) with a matplotlib color normalizer
+    for mapping those values onto the range [0.0, 1.0].
+    """
+
     def __init__(self, r:float|None, g:float|None, b:float|None, a:float|None=None, min_rgba_val:float=0.0, max_rgba_val:float=255.0):
+        """
+        Create a new color normalizer.
+
+        :param r: red value
+        :param g: green value
+        :param b: blue value
+        :param a: alpha value
+        :param min_rgba_val: minimum RGBA value, which will be normalized to 0.0
+        :param max_rgba_val: maximum RGBA value, which will be normalized to 1.0
+        """
         self.colors = ColorVals(r, g, b, a)
         self.min_rgba_val = min_rgba_val
         self.max_rgba_val = max_rgba_val
 
 
     def get_normalized(self) -> ColorVals:
+        """
+        Get the normalized versions of the RGBA color values. Values of None will remain
+        as None in the color values returned by this method.
+
+        :return: RGBA color values
+        """
         normalizer = matplotlib.colors.Normalize(vmin=self.min_rgba_val, vmax=self.max_rgba_val, clip=True)
 
         colors = list()
-        for val in (self.colors.r, self.colors.g, self.colors.b, self.colors.a):
+        for val in self.colors:
             if val is not None:
                 colors.append(normalizer(val))
             else:
@@ -224,44 +270,67 @@ class ColorNormalizer:
 
     @classmethod
     def null(cls):
+        """
+        Helper method for instantiating the "null color", or a color normalizer with all
+        the color values set to None.
+
+        :return: null color
+        """
         return cls(None, None, None, None)
 
 
 @dataclasses.dataclass
 class ColorConf:
-    priority : int
+    """
+    Color configuration for network nodes. Calling an instance of this class should
+    return color values as dictated by the configuration type.
+    """
+    priority : int # Priority of this color configuration in a ColorConfGroup
 
 
     def __call__(self, *args, **kwargs) -> ColorVals:
+        """
+        :raises NotImplementedError: if not implemented in a subclass
+        :return: RGBA color values
+        """
         raise NotImplementedError()
 
 
 @dataclasses.dataclass
 class ColorConfGroup:
+    """
+    Group of color configurations which are allowed to take priority over one another.
+    Calling an instance of this class calls all the configurations in the group to get
+    their color values. These color values are then combined according to the priorities
+    of their respective configurations:
+    - Non-None values of higher priority will supercede all values of lower priority.
+    - Non-None values of lower priority will supercede None-values of higher or equal
+      priority.
+    - Non-None values of equal priority should not be used to ensure predictable
+      behavior.
+    - Values which are None in all color configurations will remain None.
+    - Minimum priority is 0.
+    """
     confs : list[ColorConf]
 
 
     def __call__(self, *args, **kwargs) -> ColorVals:
-        colors = list()
-        priorities = list()
-
-        for conf in self.confs:
-            colors.append(conf(*args, **kwargs))
-            priorities.append(conf.priority)
+        colors = [conf(*args, **kwargs) for conf in self.confs]
+        priorities = [conf.priority for conf in self.confs]
 
         result = [None, None, None, None]
-        current_priority = 0
+        result_priority = 0
         
         for color, priority in zip(colors, priorities):
-            if priority > current_priority:
-                # Overwrite current rgba values with higher priority (non-None) rgba values
+            if priority > result_priority:
+                # Overwrite result rgba values with higher priority (non-None) rgba values
                 for i, val in enumerate(color):
                     if val is not None:
                         result[i] = val
-                # Increase priority level of current color
-                current_priority = priority
+                # Increase priority level of result color
+                result_priority = priority
             else:
-                # Overwrite a value if the current value is None and the new one is not
+                # Overwrite a value if the result value is None and the new one is not
                 for i, val in enumerate(color):
                     if result[i] is None and val is not None:
                         result[i] = val
@@ -271,9 +340,14 @@ class ColorConfGroup:
 
 @dataclasses.dataclass
 class ColorConditional(ColorConf):
-    on_color : ColorNormalizer
-    off_color : ColorNormalizer
-    condition : typing.Callable[[typing.Any], bool]
+    """
+    Color configuration that operates on a conditional function. Calling an instance of
+    this class calls the condition function with all the given arguments, and returns the
+    normalized values of on_color or off_color accordingly.
+    """
+    on_color : ColorNormalizer  # Color to use when the condition is True
+    off_color : ColorNormalizer # Color to use when the condition is False
+    condition : typing.Callable[[typing.Any], bool] # Condition function
 
 
     def __call__(self, *args, **kwargs) -> ColorVals:
@@ -285,11 +359,18 @@ class ColorConditional(ColorConf):
 
 @dataclasses.dataclass
 class ColorGradient(ColorConf):
-    min_color : ColorNormalizer
-    max_color : ColorNormalizer
-    ref_range_min : float
-    ref_range_max : float
-    get_ref_val : typing.Callable[[typing.Any], float]
+    """
+    Color configuration that provides a gradient from one color to another based on some
+    reference value. Calling an instance of this class calls the reference value getter
+    function with all the given arguments, calculates the color values between min_color
+    and max_color corresponding to the referece value, and returns the normalized color
+    values of the resulting color.
+    """
+    min_color : ColorNormalizer # Color at the "bottom" of the gradient
+    max_color : ColorNormalizer # Color at the "top" of the gradient
+    ref_range_min : float       # Minimum possible reference value, corresponding to min_color
+    ref_range_max : float       # Maximum possible reference value, corresponding to max_color
+    get_ref_val : typing.Callable[[typing.Any], float] # Function that gets the reference value
 
 
     def __call__(self, *args, **kwargs) -> ColorVals:
@@ -303,12 +384,15 @@ class ColorGradient(ColorConf):
         gradient_diff = list()
         for real_min, real_max, min_val, max_val, in zip(norm_min_color, norm_max_color, norm_min_color.vals(), norm_max_color.vals()):
             if real_min is None and real_max is None:
-                gradient_diff.append(0)
+                gradient_diff.append(None)
             else:
                 gradient_diff.append(max_val - min_val)
 
         gradient_color = list()
         for grad, min_val in zip(gradient_diff, norm_min_color.vals()):
-            gradient_color.append(norm_ref_val*grad + min_val)
+            if grad is not None:
+                gradient_color.append(norm_ref_val*grad + min_val)
+            else:
+                gradient_color.append(None)
 
         return ColorVals(*gradient_color)

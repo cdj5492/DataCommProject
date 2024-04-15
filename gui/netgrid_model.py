@@ -9,32 +9,45 @@ for any network simulator Model.
 
 import typing
 
-import numpy as np
-
 from gui.color_conf import NODE_COLOR_CONFS, VALID_COLOR_CONFS
-from gui.utils import NodeData, Model, ColorConf, ColorConfGroup
+from gui.utils import NodeUIData, Model, ColorConf, ColorConfGroup
 from network.network_grid import NetworkGrid
-from network.robot import Robot
 from network.routing_cube import NodeDiagnostics, RoutingCube
 from network.sim.recipe import Recipe
 
 
-class RoutingCubeVoxelData(NodeData):
+class RoutingCubeUIData(NodeUIData):
     """
+    Node UI data type for extracting GUI data from RoutingCube objects.
+
     Requires that any color configurations used have the function signature given by
     COLOR_CONF_EVAL_FUNC.
     """
     
     COLOR_CONF_EVAL_FUNC: typing.TypeAlias = typing.Callable[[NodeDiagnostics], typing.Any]
+    """Color configurations used by this class must take a NodeDiagnostics argument."""
 
 
     def __init__(self, cube:RoutingCube, color_conf:ColorConf|ColorConfGroup):
+        """
+        Create new routing cube UI data.
+
+        :param cube: RoutingCube
+        :param color_conf: color configuration or color configuration group to use for
+                           determining the face color of this node for the GUI
+        """
         super().__init__(cube.position)
         self.diagnostics = cube.stats
         self.color_conf = color_conf
     
 
     def facecolor(self) -> tuple[float,float,float,float]:
+        """
+        Applies the color configuration to determine the face color this node should have
+        in the GUI.
+
+        :return: tuple of RGBA color values
+        """
         colors = self.color_conf(self.diagnostics)
         return colors.vals()
 
@@ -62,14 +75,21 @@ class NetGridPresenter(Model):
         return self.dimensions
 
 
-    def get_node_voxeldata(self, mode:str) -> list[RoutingCubeVoxelData]:
+    def get_node_voxeldata(self, mode:str) -> list[RoutingCubeUIData]:
+        """
+        Creates and returns RoutingCubeUIData for each node in the network grid.
+
+        :param mode: color mode (color configuration) to use
+        :raises ValueError: if mode is not a valid color mode
+        :return: list of RoutingCubeUIData for all nodes in the network
+        """
         if mode not in VALID_COLOR_CONFS:
             raise ValueError(f"Invalid node color configuration '{mode}'")
 
         nodes = self.netgrid.node_list
         color_conf = NODE_COLOR_CONFS[mode]
 
-        return [RoutingCubeVoxelData(node, color_conf) for node in nodes] 
+        return [RoutingCubeUIData(node, color_conf) for node in nodes] 
 
 
     def next_state(self):
