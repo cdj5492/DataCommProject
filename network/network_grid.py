@@ -1,5 +1,8 @@
 """
 [MD] 4/10/24 Added NetworkGrid.send_packet()
+[MD] 4/16/24 Modified NetworkGrid.send_packet() and added get_node_by_id(),
+remove_node_by_id(), and send_packet_by_coords(). Added id argument to add_node() and
+add_robot().
 """
 
 from .routing_cube import RoutingCube
@@ -35,21 +38,27 @@ class NetworkGrid:
     # Returns None if the node does not exist.
     def get_node(self, x: int, y: int, z: int) -> RoutingCube:
         return self.node_map.get((x, y, z), None)
+    
+    def get_node_by_id(self, id:int|str) -> RoutingCube|None:
+        for node in self.node_list:
+            if node.id == id:
+                return node
+        return None
         
-    def add_robot(self, x: int, y: int, z: int):
-        node = RoutingCube((x, y, z))
+    def add_robot(self, x: int, y: int, z: int, id:int|str|None=None):
+        node = RoutingCube((x, y, z), id)
         robot = Robot(node)
         
         self.robot_list.append(robot)
         
-        self.add_node(x, y, z, node)
+        self.add_node(x, y, z, id, node)
         
         # power on
         self.robot_algorithm.power_on(robot)
     
-    def add_node(self, x: int, y: int, z: int, node: RoutingCube = None):
+    def add_node(self, x: int, y: int, z: int, id:int|str|None=None, node: RoutingCube = None):
         if node is None:
-            node = RoutingCube((x, y, z))
+            node = RoutingCube((x, y, z), id)
 
         # put it in the node_map
         self.node_map[(x, y, z)] = node
@@ -147,6 +156,12 @@ class NetworkGrid:
         west = self.get_node(x-1, y, z)
         if west is not None:
             west.ll_references.set_face(Direction.EAST, None)
+
+    def remove_node_by_id(self, id:int|str):
+        node = self.get_node_by_id(id)
+        if node is None:
+            return
+        self.remove_node(*node.position)
             
     # returns a 2d array of nodes in the requested z layer.
     # If there are no nodes in that layer, returns None.
@@ -198,7 +213,20 @@ class NetworkGrid:
         for robot in self.robot_list:
             robot.step(self.robot_algorithm)
 
-    def send_packet(self, data, src_addr:tuple[int,int,int], dest_addr:tuple[int,int,int]):
+    def send_packet(self, data, src_id:int|str, dest_id:int|str):
+        src_node = self.get_node_by_id(src_id)
+        if src_node is None:
+            raise ValueError(f"Cannot trigger packet transmission from node ID:'{src_id}'; Node does not exist")
+        self.routing_algorithm.send_packet(src_node, dest_id, data)
+
+    def send_packet_by_coords(self, data, src_coords:tuple[int,int,int], dest_coords:tuple[int,int,int]):
         # Retrieves the source node and calls the routing algorithm to trigger packet transmission
-        src_node = self.get_node(*src_addr)
-        self.routing_algorithm.send_packet(src_node, dest_addr, data)
+        src_node = self.get_node(*src_coords)
+        dest_node = self.get_node(*dest_coords)
+        if src_node is None:
+            raise ValueError(f"Cannot trigger packet transmission from src node {src_coords}; Node does not exist")
+        if dest_node is None:
+            dest_id = RoutingCube._ID_NODE_DNE
+        else:
+            dest_id = dest_node.id
+        self.routing_algorithm.send_packet(src_node, dest_id, data)
