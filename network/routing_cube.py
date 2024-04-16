@@ -13,6 +13,7 @@ from .faces import Faces, Direction
 
 class RoutingCube:
     _NEXT_ID = 0
+    _ID_NODE_DNE = -1
     MAX_Q_LEN = 64
 
     def __init__(self, position: tuple[int, int, int] = (0, 0, 0), id:int|str|None=None) -> None:

@@ -5,8 +5,8 @@ author: Mark Danza
 
 Recipe File Formatting:
  - One command per line.
- - Each line contains a command name followed by integer arguments, space-delimited.
- - Command arguments may only be integers.
+ - Each line contains a command name followed by arguments, space-delimited.
+ - Command arguments that can be converted to integers will be.
  - Blank lines and commented lines (starting with '#') are ignored.
 
 How Recipes Work:
@@ -23,13 +23,19 @@ How Recipes Work:
    simulation when the PAUSE is reached.
 
 The following commands are allowed in recipe files:
- - ADDN x y z: Add a node to the network at the specified coordinates.
- - ADDR x y z: Add a robot node to the network at the specified coordinates.
+ - ADDN x y z [id]: Add a node to the network at the specified coordinates. An optional
+   integer or string node ID can be given.
+ - ADDR x y z [id]: Add a robot node to the network at the specified coordinates. An
+   optional integer or string node ID can be given.
  - RMVN x y z: Removes the node at the specified coordinates from the network. May also
    be used to remove robot nodes.
+   RMVN id: Removes the node with the specified ID from the network. May also be used to
+   remove robot nodes.
  - SEND data src_x src_y src_z dest_x dest_y dest_z: Sends the given data from the node
    specified by the src coordinates to the node specified by the dest coordinates using
    the routing algorithm of the network.
+   SEND data src_id dest_id: Sends the given data from the node specified by the src ID
+   to the node specified by the dest ID using the routing algorithm of the network. 
  - WAIT n: The recipe will do nothing for n+1 cycles.
  - LOOP n: The recipe will execute the enclosed block of commands for n+1 iterations.
  - ENDL: Denotes the end of a loop block.
@@ -42,7 +48,6 @@ import os
 import typing
 
 from network.network_grid import NetworkGrid
-from network.faces import Direction
 
 
 class RecipeComm(enum.Enum):
@@ -70,31 +75,31 @@ class RecipeComm(enum.Enum):
     
 
     @classmethod
-    def expected_arg_counts(cls) -> dict:
+    def expected_arg_counts(cls) -> dict[tuple[int]]:
         """
         Generates a dictionary of the expected argument counts for each valid command.
 
         :return: RecipeComm : int dictionary
         """
         return {
-            cls.ADDN : 3,
-            cls.ADDR : 3,
-            cls.RMVN : 3,
-            cls.SEND : 7,
-            cls.WAIT : 1,
-            cls.LOOP : 1,
-            cls.ENDL : 0,
-            cls.PAUSE : 0,
+            cls.ADDN : (3,4),
+            cls.ADDR : (3,4),
+            cls.RMVN : (3,1),
+            cls.SEND : (7,3),
+            cls.WAIT : (1,),
+            cls.LOOP : (1,),
+            cls.ENDL : (0,),
+            cls.PAUSE : (0,),
         }
     
 
-    def num_args_expected(self) -> int:
+    def num_args_expected(self) -> tuple[int]:
         """
         Gets the number of arguments expected for this type of command.
 
         :raises NotImplementedError: if there is no entry for this command in the
         dictionary returned by expected_arg_counts() (for development purposes)
-        :return: expected argument count of this command
+        :return: expected argument counts of this command
         """
         arg_nums = RecipeComm.expected_arg_counts()
         try:
@@ -178,13 +183,12 @@ class Recipe:
                 e.add_note(f"(line {linenum} in {f})")
                 raise e
 
-            # Convert arguments to int
-            try:
-                args = [int(arg) for arg in args]
-            except ValueError:
-                e = ValueError(f"Invalid recipe file: all arguments must be integers")
-                e.add_note(f"(line {linenum} in {f})")
-                raise e
+            # Convert arguments to int if able
+            for i, arg in enumerate(args):
+                try:
+                    args[i] = int(arg)
+                except ValueError:
+                    pass
             
             # Check argument count
             if check_arg_count:
@@ -211,55 +215,61 @@ class Recipe:
         :raises ValueError: if the length of args is not equal to the number of expected
         arguments for comm
         """
-        if comm.num_args_expected() != len(args):
+        if len(args) not in comm.num_args_expected():
             raise ValueError(
                 f"Invalid number of arguments for recipe command '{comm.name}': expected {comm.num_args_expected()}, got {len(args)}"
             )
 
 
-    def handle_ADDN(self, netgrid:NetworkGrid, x:int, y:int, z:int):
+    def handle_ADDN(self, netgrid:NetworkGrid, *args):
         """
         Handling method for ADDN commands.
 
         Adds a node at the specified coordinates.
 
         :param netgrid: network grid to operate on
-        :param x: x-coordinate
-        :param y: y-coordinate
-        :param z: z-coordinate
         """
-        netgrid.add_node(x, y, z)
+        if len(args) == 3:
+            x, y, z = args
+            id = None
+        else:
+            x, y, z, id = args
+        netgrid.add_node(x, y, z, id)
 
 
-    def handle_ADDR(self, netgrid:NetworkGrid, x:int, y:int, z:int):
+    def handle_ADDR(self, netgrid:NetworkGrid, *args):
         """
         Handling method for ADDR commands.
 
         Adds a robot node at the specified coordinates.
 
         :param netgrid: network grid to operate on
-        :param x: x-coordinate
-        :param y: y-coordinate
-        :param z: z-coordinate
         """
-        netgrid.add_robot(x, y, z)
+        if len(args) == 3:
+            x, y, z = args
+            id = None
+        else:
+            x, y, z, id = args
+        netgrid.add_robot(x, y, z, id)
 
 
-    def handle_RMVN(self, netgrid:NetworkGrid, x:int, y:int, z:int):
+    def handle_RMVN(self, netgrid:NetworkGrid, *args):
         """
         Handling method for RMVN commands.
 
         Removes a node from the specified coordinates.
 
         :param netgrid: network grid to operate on
-        :param x: x-coordinate
-        :param y: y-coordinate
-        :param z: z-coordinate
         """
-        netgrid.remove_node(x, y, z)
+        if len(args) == 3:
+            x, y, z = args
+            netgrid.remove_node(x, y, z)
+        else:
+            id = args[0]
+            netgrid.remove_node_by_id(id)
 
 
-    def handle_SEND(self, netgrid:NetworkGrid, data:typing.Any, src_x:int, src_y:int, src_z:int, dest_x:int, dest_y:int, dest_z:int):
+    def handle_SEND(self, netgrid:NetworkGrid, *args):
         """
         Handling method for SEND commands.
 
@@ -267,18 +277,16 @@ class Recipe:
         transmission from the source node to the destination node.
 
         :param netgrid: network grid to operate on
-        :param data: data to send
-        :param src_x: x-coordinate of source node
-        :param src_y: y-coordinate of source node
-        :param src_z: z-coordinate of source node
-        :param src_x: x-coordinate of destination node
-        :param src_y: y-coordinate of destination node
-        :param src_z: z-coordinate of destination node
         """
-        netgrid.send_packet(data, (src_x,src_y,src_z), (dest_x,dest_y,dest_z))
+        if len(args) == 7:
+            data, src_x, src_y, src_z, dest_x, dest_y, dest_z = args
+            netgrid.send_packet_by_coords(data, (src_x,src_y,src_z), (dest_x,dest_y,dest_z))
+        else:
+            data, src, dest = args
+            netgrid.send_packet(data, src, dest)
 
 
-    def handle_WAIT(self, netgrid:NetworkGrid, cycles:int):
+    def handle_WAIT(self, netgrid:NetworkGrid, *args):
         """
         Handling method for WAIT commands.
 
@@ -288,12 +296,12 @@ class Recipe:
         a total of cycles + 1 calls.
 
         :param netgrid: unused
-        :param cycles: number of additional cycles to wait for
         """
+        cycles = args[0]
         self.wait_cycles_remaining = cycles
 
 
-    def handle_LOOP(self, netgrid:NetworkGrid, iterations:int):
+    def handle_LOOP(self, netgrid:NetworkGrid, *args):
         """
         Handling method for LOOP commands.
 
@@ -301,11 +309,11 @@ class Recipe:
         of iterations + 1 times.
 
         :param netgrid: unused
-        :param iterations: number of iterations in the loop (use a negative value for an
-                           infinite loop)
         :raises RuntimeError: if the recipe is already in a loop when this method is
         called
         """
+        iterations = args[0]
+
         if self.in_loop:
             raise RuntimeError("Nested loops in recipes not allowed")
 
@@ -314,7 +322,7 @@ class Recipe:
         self.in_loop = True
 
 
-    def handle_ENDL(self, netgrid:NetworkGrid):
+    def handle_ENDL(self, netgrid:NetworkGrid, *args):
         """
         Handling method for ENDL commands.
 
@@ -337,7 +345,7 @@ class Recipe:
             self.idx = self.loop_idx
 
 
-    def handle_PAUSE(self, netgrid:NetworkGrid):
+    def handle_PAUSE(self, netgrid:NetworkGrid, *args):
         """
         Handling method for PAUSE commands.
 
@@ -349,13 +357,12 @@ class Recipe:
         self.paused = True
 
 
-    def handle_comm(self, netgrid:NetworkGrid, comm:RecipeComm, args:typing.Iterable):
+    def handle_comm(self, netgrid:NetworkGrid, comm:RecipeComm, *args):
         """
         Calls the appropriate handling method for the given command.
 
         :param netgrid: network grid to operate on
         :param comm: command
-        :param args: command arguments
         :raises ValueError: if args does not contain the expected number of arguments for
         the given command or if the given command is invalid
         """
@@ -399,7 +406,7 @@ class Recipe:
 
             comm = self.commands[self.idx]
             args = self.command_args[self.idx]
-            self.handle_comm(netgrid, comm, args)
+            self.handle_comm(netgrid, comm, *args)
             self.idx += 1
 
 
