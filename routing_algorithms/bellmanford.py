@@ -4,7 +4,10 @@ file: bellmanford.py
 author: Mark Danza
 
 Consumes a maximum of one packet from each node queue per simulation cycle and processes
-or routes it according to the Bellman-Ford algorithm.
+or routes it according to the Bellman-Ford algorithm. This algorithm suffers from the
+count-to-infinity problem if a node is removed from the network. It can recover to this
+if the removed node (a node with the same address) is re-added to the network at any
+location.
 """
 
 import dataclasses
@@ -24,6 +27,11 @@ BMF_INFINITE_LINK_COST = math.inf
 
 @dataclasses.dataclass
 class BMFPkt:
+    """
+    Generic Bellman-Ford packet structure. Should not be used directly. Destination
+    address is allowed to be None for special packets that are only transmitted to
+    neighbors and not routed any further.
+    """
     src_addr : node_addr_t
     dest_addr : node_addr_t|None
 
@@ -90,13 +98,17 @@ class DistanceTbl:
 
 
     def lost_neighbor(self, addr:node_addr_t):
+        """
+        Update the distance table to indicate that this node no longer has a connection
+        to a neighbor node (i.e., set the link cost to all other nodes via the
+        disconnected neighbor to infinity).
+
+        :param addr: disconnected neighbor node address
+        """
         if addr not in self._distances:
             self._distances[addr] = dict()
         # Cost to lost neighbor (via itself) is infinite
         self._distances[addr][addr] = BMF_INFINITE_LINK_COST
-        # Update distance table to have infinite link cost to neighbor via all other nodes
-        for via in self._distances[addr]:
-            self._distances[addr][via] = BMF_INFINITE_LINK_COST
         # Update distance table to have infinite cost to all other nodes via neighbor
         for dest in self._distances:
             if addr in self._distances[dest]:
@@ -203,6 +215,9 @@ class BellmanFordData:
     
 
     def lost_neighbor(self, addr:node_addr_t):
+        """
+        Wrapper for DistanceTbl.lost_neighbor().
+        """
         return self.distance_tbl.lost_neighbor(addr)
 
 
@@ -236,7 +251,14 @@ class BellmanFordRouting(RoutingAlgorithm):
         pass
 
 
-    def lost_neighbor_connection(self, cube:RoutingCube, neighbor_addr:node_addr_t, neighbor_pos:node_pos_t):
+    def lost_neighbor_connection(self, cube:RoutingCube, neighbor_addr:node_addr_t):
+        """
+        Handles a neighbor node disconnection, which is usually detected when a packet
+        transmission to a neighbor fails.
+
+        :param cube: RoutingCube to operate on
+        :param neighbor_addr: disconnected neighbor node address
+        """
         # Update the distance table to have infinite link cost for the disconnected neighbor
         cube.data.lost_neighbor(neighbor_addr)
         # Update neighbors with new DV
@@ -267,7 +289,7 @@ class BellmanFordRouting(RoutingAlgorithm):
             rc = cube.send_packet(tx_dir, ack_pkt)
             if not rc:
                 cube.stats.num_pkts_dropped += 1
-                self.lost_neighbor_connection(cube, nn_pkt.src_addr, neighbor_pos)
+                self.lost_neighbor_connection(cube, nn_pkt.src_addr)
 
 
     def send_new_neighbor_notif(self, cube:RoutingCube):
@@ -338,9 +360,10 @@ class BellmanFordRouting(RoutingAlgorithm):
         # Send the packet in the appropriate direction
         tx_dir = determine_tx_dir(cube.position, next_hop)
         rc = cube.send_packet(tx_dir, pkt)
+        # Return value of RoutingCube.send_packet() indicates whether the rx node is connected
         if not rc:
             cube.stats.num_pkts_dropped += 1
-            self.lost_neighbor_connection(cube, pkt.dest_addr, next_hop)
+            self.lost_neighbor_connection(cube, pkt.dest_addr)
 
 
     def route(self, cube:RoutingCube):
@@ -407,7 +430,8 @@ class BellmanFordRouting(RoutingAlgorithm):
 class BellmanFordRobot(RobotAlgorithm):
     """
     Bellman-Ford routing algorithm for robots. Simply treats the robot as a wrapper for
-    a RoutingCube using the BellmanFordRouting algorithm.
+    a RoutingCube using the BellmanFordRouting algorithm. The robot has no special
+    functionality.
     """
 
     CUBE_ROUTING_ALGO = BellmanFordRouting()
