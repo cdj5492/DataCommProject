@@ -8,6 +8,7 @@ or routes it according to the Bellman-Ford algorithm.
 """
 
 import dataclasses
+import math
 import typing
 
 from network.robot import Robot
@@ -18,6 +19,8 @@ from routing_algorithms.helpers import node_addr_t, node_pos_t, determine_tx_dir
 from routing_algorithms.routing_algorithm import RoutingAlgorithm
 
 BMF_DEFAULT_LINK_COST = 1
+BMF_INFINITE_LINK_COST = math.inf
+
 
 @dataclasses.dataclass
 class BMFPkt:
@@ -84,6 +87,20 @@ class DistanceTbl:
         self._distances[addr][addr] = link_cost
         # Add neighbor addr and pos to dict
         self._neighbor_addr_pos[addr] = pos
+
+
+    def lost_neighbor(self, addr:node_addr_t):
+        if addr not in self._distances:
+            self._distances[addr] = dict()
+        # Cost to lost neighbor (via itself) is infinite
+        self._distances[addr][addr] = BMF_INFINITE_LINK_COST
+        # Update distance table to have infinite link cost to neighbor via all other nodes
+        for via in self._distances[addr]:
+            self._distances[addr][via] = BMF_INFINITE_LINK_COST
+        # Update distance table to have infinite cost to all other nodes via neighbor
+        for dest in self._distances:
+            if addr in self._distances[dest]:
+                self._distances[dest][addr] = BMF_INFINITE_LINK_COST
 
 
     def update(self, distance_vector:dict[node_addr_t, int], via:node_addr_t, via_pos:node_pos_t):
@@ -183,6 +200,10 @@ class BellmanFordData:
         Wrapper for DistanceTbl.new_neighbor().
         """
         return self.distance_tbl.new_neighbor(addr, pos, link_cost)
+    
+
+    def lost_neighbor(self, addr:node_addr_t):
+        return self.distance_tbl.lost_neighbor(addr)
 
 
     def update(self, distance_vector:dict[node_addr_t, int], via:node_addr_t, via_pos:node_pos_t):
@@ -213,6 +234,13 @@ class BellmanFordRouting(RoutingAlgorithm):
     
     def __init__(self):
         pass
+
+
+    def lost_neighbor_connection(self, cube:RoutingCube, neighbor_addr:node_addr_t, neighbor_pos:node_pos_t):
+        # Update the distance table to have infinite link cost for the disconnected neighbor
+        cube.data.lost_neighbor(neighbor_addr)
+        # Update neighbors with new DV
+        self.update_neighbors(cube)
     
 
     def got_new_neighbor_notif(self, cube:RoutingCube, nn_pkt:BMFNewNeighborPkt, rx_dir:Direction):
@@ -234,9 +262,12 @@ class BellmanFordRouting(RoutingAlgorithm):
 
         # If this is not an Ack, acknowledge the neighbor by sending the packet back
         if not nn_pkt.ack:
-            nn_pkt.src_addr = cube.id
-            nn_pkt.ack = True
-            cube.send_packet(determine_tx_dir(cube.position, neighbor_pos), nn_pkt)
+            ack_pkt = BMFNewNeighborPkt(cube.id, nn_pkt.src_addr, ack=True)
+            tx_dir = determine_tx_dir(cube.position, neighbor_pos)
+            rc = cube.send_packet(tx_dir, ack_pkt)
+            if not rc:
+                cube.stats.num_pkts_dropped += 1
+                self.lost_neighbor_connection(cube, nn_pkt.src_addr, neighbor_pos)
 
 
     def send_new_neighbor_notif(self, cube:RoutingCube):
@@ -249,7 +280,7 @@ class BellmanFordRouting(RoutingAlgorithm):
         for d in list(Direction):
             # Create new neighbor notification packet
             nn_pkt = BMFNewNeighborPkt(cube.id, None)
-            cube.send_packet(d, nn_pkt)
+            _ = cube.send_packet(d, nn_pkt)
 
 
     def update_distance_tbl(self, cube:RoutingCube, dv_pkt:BMFDistanceVectorPkt, rx_dir:Direction):
@@ -280,7 +311,7 @@ class BellmanFordRouting(RoutingAlgorithm):
         # Only update neighbors if distance table has not converged
         if cube.data.last_dv != dv_pkt.vector:
             for d in list(Direction):
-                cube.send_packet(d, dv_pkt)
+                _ = cube.send_packet(d, dv_pkt)
             cube.data.last_dv = dv_pkt.vector
 
 
@@ -306,7 +337,10 @@ class BellmanFordRouting(RoutingAlgorithm):
         
         # Send the packet in the appropriate direction
         tx_dir = determine_tx_dir(cube.position, next_hop)
-        cube.send_packet(tx_dir, pkt)
+        rc = cube.send_packet(tx_dir, pkt)
+        if not rc:
+            cube.stats.num_pkts_dropped += 1
+            self.lost_neighbor_connection(cube, pkt.dest_addr, next_hop)
 
 
     def route(self, cube:RoutingCube):

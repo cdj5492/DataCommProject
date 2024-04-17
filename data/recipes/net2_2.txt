@@ -1,0 +1,25 @@
+# Simple moving robot simulation for network 2
+
+# Add two robots
+ADDR 0 5 6 rob1
+ADDR 6 5 0 robA
+
+# Delay for initialization
+WAIT 300
+PAUSE
+
+SEND 99 robA rob1
+RMVN rob1
+
+# LOOP -1
+# Send packet from one robot to the other
+# SEND 99 robA rob1
+# Move the robot after some short delay
+# RMVN rob1
+# ADDR 0 4 6 rob1
+# WAIT 19
+# Move the robot back after some long delay
+# RMVN rob1
+# ADDR 0 5 6 rob1
+# WAIT 19
+# ENDL
