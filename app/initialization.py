@@ -108,7 +108,8 @@ def init_simulator(routing_algo_name:str, net_file_path:os.PathLike|None=None) -
             if z > max_z:
                 max_z = z
 
-    return grid, (max_x+1, max_y+1, max_z+1)
+    max_pos = max(max_x, max_y, max_z) + 1
+    return grid, (max_pos, max_pos, max_pos)
 
 
 def init_presenter(
