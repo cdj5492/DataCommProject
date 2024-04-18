@@ -16,15 +16,9 @@ from robot_algorithm.robot_algorithm import RobotAlgorithm
 from routing_algorithms.helpers import node_addr_t, node_pos_t, determine_tx_dir, determine_tx_pos
 from routing_algorithms.routing_algorithm import RoutingAlgorithm
 
-BMF_DEFAULT_LINK_COST = 1
+RP_DEFAULT_LINK_COST = 1
 
-@dataclasses.dataclass
-class BMFDistanceVectorPkt:
-    """
-    Special packet type used to send distance vectors to a node's neighbors.
-    """
-    vector: dict[node_addr_t, int]
-
+MAX_PACKET_IDS = 10
 
 @dataclasses.dataclass
 class RequestPositionPkt:
@@ -41,7 +35,7 @@ class NeighborPositionPkt:
     Contains the position of a neighboring node.
     """
     position: tuple[int, int, int]
-    
+
 @dataclasses.dataclass
 class NetNodeData:
     """
@@ -54,13 +48,23 @@ class NetNodeData:
     
     pending_position_requests: list[Direction] = dataclasses.field(default_factory=list)
     
+    previously_received_packet_ids: list[int] = dataclasses.field(default_factory=list)
+    
     def __repr__(self) -> str:
         return f"NetNodeData(position={self.position}, position_known={self.position_known})"
 
+@dataclasses.dataclass
+class NetworkShapeRequestPkt:
+    id: int = 0
+    path_taken: list[Direction] = dataclasses.field(default_factory=list)
+
+@dataclasses.dataclass
+class NetworkShapeResponsePkt:
+    path_to_take: list[Direction] = dataclasses.field(default_factory=list)
     
+@dataclasses.dataclass
 class RobotData:
-    def __init__(self):
-        pass
+    id: int = 0
 
 def reverse_direction(direction:Direction) -> Direction:
     match direction:
@@ -124,7 +128,39 @@ class NetNodeRouting(RoutingAlgorithm):
                         pass
                 cube.data.position_known = True
 
-    def power_on(self, cube:RoutingCube):
+            elif isinstance(packet[0], NetworkShapeRequestPkt):
+                # check if this packet has been received before
+                if packet[0].id not in cube.data.previously_received_packet_ids:
+                    # add it
+                    cube.data.previously_received_packet_ids.append(packet[0].id)
+                    if cube.data.previously_received_packet_ids > MAX_PACKET_IDS:
+                        cube.data.previously_received_packet_ids.pop(0)
+                    
+                    # create a copy of the packet
+                    new_packet = NetworkShapeRequestPkt(packet[0].id)
+                    new_packet.path_taken = packet[0].path_taken.copy()
+                    
+                    # send a packet back in the direction it came from
+                    cube.send_packet(packet[1], NetworkShapeResponsePkt(new_packet.path_taken))
+                    
+                    # add direction packet came from to path_taken
+                    new_packet.path_taken.append(packet[1])
+                    
+                    # send packet in all directions except the one it came from
+                    for direction in Direction:
+                        if direction != packet[1]:
+                            cube.send_packet(direction, new_packet)
+
+            elif isinstance(packet[0], NetworkShapeResponsePkt):
+                # route packet according to path_to_take
+                try:
+                    next_direction = packet[0].path_to_take.pop(0)
+                    cube.send_packet(next_direction, packet[0])
+                except IndexError:
+                    print ("Packet never reached destination. Got stuck at node: ", cube)
+                
+
+    def power_on(self, cube: RoutingCube):
         cube.data = NetNodeData()
         # request position information from neighboring nodes.
         # if there are no neighbors, assume this node is 
@@ -145,7 +181,7 @@ class NetNodeRouting(RoutingAlgorithm):
             cube.data.position_known = True
 
     
-    def send_packet(self, cube:RoutingCube, dest_addr:node_addr_t, data:typing.Any):
+    def send_packet(self, cube: RoutingCube, dest_addr: node_addr_t, data: typing.Any):
         pass
 
 
@@ -159,4 +195,5 @@ class RoutePlanningRobot(RobotAlgorithm):
         
 
     def power_on(self, robot: Robot):
+        robot.cube.data = RobotData()
         pass
