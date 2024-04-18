@@ -135,7 +135,7 @@ class DijkstraRouting(RobotAlgorithm):
         """
         cube.data = DijkstraData(cube.position)
 
-    def step(self, robot: Robot) -> None:
+    def route(self, cube: RoutingCube) -> None:
         """
         Perform a routing step based on the Dijkstra algorithm.
 
@@ -145,7 +145,7 @@ class DijkstraRouting(RobotAlgorithm):
         :param robot: robot instance
         """
         # 1. Receive packets from neighbors
-        routing_packets = self.cube.recv_packets(robot)
+        routing_packets = cube.recv_packets(robot)
         # 2. Update distance table based on received packets (using data.update())
         for packet in routing_packets:
             self.data.update(packet.distance_vector, packet.source)
@@ -184,6 +184,22 @@ class DijkstraRobot(Robot):
         """
         #super().__init__(addr)
         #self.routing_alg = routing_alg
+        pass
+    
+    def power_on(self, cube: RoutingCube) -> None:
+        """
+        Power on the robot and its routing algorithm.
+
+        :param cube: routing cube instance
+        """
+        #self.routing_alg.power_on(cube)
+        pass
+
+    def step(self) -> None:
+        """
+        Perform a routing step based on the robot's routing algorithm.
+        """
+        #self.routing_alg.step(self)
         pass
 
 """
