@@ -20,8 +20,8 @@ from matplotlib.figure import Figure
 from matplotlib.widgets import Button, TextBox, CheckButtons
 
 from app.initialization import init_presenter
-from gui.netgrid_model import NetGridPresenter
 from gui.utils import Model, Observer, GUIContainer
+from network.routing_cube import RoutingCube
 
 voxel_pos_t: typing.TypeAlias = tuple[int,int,int]
 """Typemark for voxel coordinates."""
@@ -117,6 +117,9 @@ class PlotGUI(Observer):
         # Set up check boxes
         self.chk_ignorepause = CheckButtons(ax_ignorepause_chk, ["Ignore Pause?"], [False])
         self.chk_robot = CheckButtons(ax_robot_chk, ["Robot Node?"], [False])
+
+        # Set axis used to display text on network stats
+        self.ax_statstxt = self.fig.add_axes([0.01, 0.99, 0.30, 0.20])
     
 
     def plot_voxels(self, colormode:str):
@@ -133,14 +136,56 @@ class PlotGUI(Observer):
         voxels = np.zeros((net_x, net_y, net_z))
         facecolors = np.zeros((net_x, net_y, net_z, 4))
 
+        # Init list for network stats
+        maxes = [0]*8
+
         # Get voxel data from model
         voxeldata = self._model.get_node_voxeldata(colormode)
 
-        # Transfer voxel data to arrays
         for data in voxeldata:
+            # Transfer voxel data to arrays
             x, y, z = data.coordinates
             voxels[x,y,z] = 1
             facecolors[x,y,z] = data.facecolor()
+
+            # Get stats of this node to calculate stat maximums
+            stats = [
+                data.diagnostics.num_pkts_sent, data.diagnostics.num_pkts_sent_this_cycle,
+                data.diagnostics.num_pkts_received, data.diagnostics.num_pkts_received_this_cycle,
+                data.diagnostics.num_pkts_dropped, data.diagnostics.num_pkts_dropped_this_cycle,
+                data.diagnostics.current_q_len, data.diagnostics.highest_q_len,
+            ]
+            for i, (stat, statmax) in enumerate(zip(stats, maxes)):
+                if stat > statmax:
+                    maxes[i] = stat
+
+        # Get stats text for GUI
+        statstext_properties = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
+        statstext = '\n'.join([
+            f"Cycle Number: {self._model.cycle_num}",
+            f"Node Queue Size: {RoutingCube.MAX_Q_LEN}",
+            "-"*60,
+            f"Max. Total Pkts Sent: {maxes[0]}",
+            f"Max. Pkts Sent This Cycle: {maxes[1]}",
+            f"Max. Total Pkts Received: {maxes[2]}",
+            f"Max. Pkts Received This Cycle: {maxes[3]}",
+            f"Max. Total Pkts Dropped: {maxes[4]}",
+            f"Max. Pkts Dropped This Cycle: {maxes[5]}",
+            f"Max. Node Queue Length: {maxes[6]}",
+            f"Highest Recorded Queue Length: {maxes[7]}",
+        ])
+
+        # Set stats text
+        self.ax_statstxt.cla()
+        self.ax_statstxt.set_axis_off()
+        self.ax_statstxt.text(
+            0.0, 0.0,
+            statstext,
+            transform=self.ax_statstxt.transAxes,
+            fontsize=10,
+            verticalalignment="top",
+            bbox=statstext_properties
+        )
         
         # Draw voxels on main axis
         self.voxels = self.ax.voxels(voxels, facecolors=facecolors, edgecolor='k', picker=True)

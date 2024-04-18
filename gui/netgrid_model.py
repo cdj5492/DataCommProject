@@ -68,6 +68,7 @@ class NetGridPresenter(Model):
         self.netgrid = netgrid
         self.dimensions = dimensions
         self.recipe = recipe
+        self.cycle_num = 0
         super().__init__()
 
 
@@ -103,6 +104,7 @@ class NetGridPresenter(Model):
             self.recipe.resume()
             self.recipe.execute_next(self.netgrid)
         # Step network grid and update observers
+        self.cycle_num += 1
         self.netgrid.step()
         self.alert_observers()
 
@@ -133,6 +135,7 @@ class NetGridPresenter(Model):
 
             # Execute recipe instruction and step network grid each cycle
             while not self.recipe.paused and num_cycles != 0:
+                self.cycle_num += 1
                 self.recipe.execute_next(self.netgrid)
                 self.netgrid.step()
 
