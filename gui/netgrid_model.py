@@ -132,7 +132,7 @@ class NetGridPresenter(Model):
             self.recipe.resume()
 
             # Execute recipe instruction and step network grid each cycle
-            while self.recipe.is_running() and num_cycles != 0:
+            while not self.recipe.paused and num_cycles != 0:
                 self.recipe.execute_next(self.netgrid)
                 self.netgrid.step()
 

@@ -3,6 +3,7 @@
 received on the faces (as opposed to the Faces object having a separate queue for each
 Face).
 [MD] 4/14/24 Added NodeDiagnostics class for tracking RoutingCube statistics at runtime.
+[MD] 4/16/24 RoutingCube IDs implemented.
 """
 
 import dataclasses
@@ -47,11 +48,20 @@ class NodeDiagnostics:
 
 
 class RoutingCube:
+    _NEXT_ID = 0
+    _ID_NODE_DNE = -1
     MAX_Q_LEN = 64
 
-    def __init__(self, position: tuple[int, int, int] = (0, 0, 0)) -> None:
+    def __init__(self, position: tuple[int, int, int] = (0, 0, 0), id:int|str|None=None) -> None:
         # position of this cube in the lattice
         self.position = position
+
+        # Unique ID ("MAC address") for this cube
+        if id is None:
+            self.id = RoutingCube._NEXT_ID
+            RoutingCube._NEXT_ID += 1
+        else:
+            self.id = id
 
         # faces of this cube that packets can be received on
         self.faces = Faces()
