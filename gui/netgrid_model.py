@@ -104,6 +104,9 @@ class NetGridPresenter(Model):
             self.recipe.execute_next(self.netgrid)
         # Step network grid and update observers
         self.netgrid.step()
+        print()
+        for cube in self.netgrid.get_all_nodes():
+            print(cube)
         self.alert_observers()
 
 
