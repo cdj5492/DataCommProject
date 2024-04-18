@@ -117,27 +117,23 @@ class DijkstraRouting(RobotAlgorithm):
     Dijkstra routing algorithm implementation.
     """
 
-    def __init__(self, robot: Robot = None, cube: RoutingCube = None):
+    def __init__(self):
+        #, robot: Robot, cube: RoutingCube
         """
         Initialize the routing algorithm with the robot and routing cube.
 
         :param robot: robot instance (default: None)
         :param cube: routing cube instance (default: None)
         """
-        super().__init__(robot, cube)  # Pass arguments to RobotAlgorithm
-        # ... (rest of the constructor logic)
-
-        if robot is None or cube is None:
-            raise ValueError("Both robot and cube are required for DijkstraRouting.")
-
+        #super().__init__(robot, cube)  # Pass arguments to RobotAlgorithm
+        pass
     def power_on(self, cube: RoutingCube) -> None:
         """
         Called when the routing algorithm is powered on.
 
         :param cube: routing cube instance
         """
-        # ... (Perform any Dijkstra-specific initialization on the cube)
-        pass
+        cube.data = DijkstraData(cube.position)
 
     def step(self, robot: Robot) -> None:
         """
@@ -178,16 +174,17 @@ class DijkstraRobot(Robot):
     Robot class with Dijkstra routing algorithm.
     """
 
-    def __init__(self, addr: int, routing_alg: DijkstraRouting):
+    def __init__(self):
+        #, addr: int, routing_alg: DijkstraRouting)
         """
         Initialize the robot with its address and routing algorithm.
 
         :param addr: robot address
         :param routing_algo: routing algorithm instance
         """
-        super().__init__(addr)
-        self.routing_alg = routing_alg
-
+        #super().__init__(addr)
+        #self.routing_alg = routing_alg
+        pass
 
 """
 # Class representing a node in the graph
