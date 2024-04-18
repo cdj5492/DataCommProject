@@ -288,7 +288,6 @@ class BellmanFordRouting(RoutingAlgorithm):
             tx_dir = determine_tx_dir(cube.position, neighbor_pos)
             rc = cube.send_packet(tx_dir, ack_pkt)
             if not rc:
-                cube.stats.num_pkts_dropped += 1
                 self.lost_neighbor_connection(cube, nn_pkt.src_addr)
 
 
@@ -353,7 +352,7 @@ class BellmanFordRouting(RoutingAlgorithm):
         # Route the packet toward the destination using Bellman Ford
         next_hop = cube.data.next_hop(pkt.dest_addr)
         if next_hop is None:
-            # This cube does not know a route to the destination
+            # This cube does not know a route to the destination - do nothing with the packet
             cube.stats.num_pkts_dropped += 1
             return
         
@@ -362,7 +361,6 @@ class BellmanFordRouting(RoutingAlgorithm):
         rc = cube.send_packet(tx_dir, pkt)
         # Return value of RoutingCube.send_packet() indicates whether the rx node is connected
         if not rc:
-            cube.stats.num_pkts_dropped += 1
             self.lost_neighbor_connection(cube, pkt.dest_addr)
 
 
