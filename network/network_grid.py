@@ -3,11 +3,14 @@
 [MD] 4/16/24 Modified NetworkGrid.send_packet() and added get_node_by_id(),
 remove_node_by_id(), and send_packet_by_coords(). Added id argument to add_node() and
 add_robot().
+[MD] 4/19/24 Added NetworkGrid.stats attribute for storing NetworkDiagnostics and
+NetworkGrid.update_net_stats() for tracking network statistics.
 """
 
 from .routing_cube import RoutingCube
 from .faces import Direction
 from typing import Dict
+from network.netstats import NetworkDiagnostics
 from routing_algorithms.routing_algorithm import RoutingAlgorithm
 from robot_algorithm.robot_algorithm import RobotAlgorithm
 from .robot import Robot
@@ -33,6 +36,8 @@ class NetworkGrid:
 
         self.routing_algorithm = routing_algorithm
         self.robot_algorithm = robot_algorithm
+
+        self.stats = NetworkDiagnostics()
     
     # Gets the requested node from the network.
     # Returns None if the node does not exist.
@@ -203,6 +208,11 @@ class NetworkGrid:
     def get_all_nodes(self) -> list[RoutingCube]:
         return self.node_list
     
+    def update_net_stats(self):
+        self.stats.reset_cycle_dependent_stats()
+        for node in self.node_list:
+            self.stats.integrate_node_stats(node.stats)
+    
     def step(self):
         for node in self.node_list:
             node.step(self.routing_algorithm)
@@ -212,6 +222,8 @@ class NetworkGrid:
             
         for robot in self.robot_list:
             robot.step(self.robot_algorithm)
+
+        self.update_net_stats()
 
     def send_packet(self, data, src_id:int|str, dest_id:int|str):
         src_node = self.get_node_by_id(src_id)
