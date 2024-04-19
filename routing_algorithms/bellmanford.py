@@ -301,7 +301,8 @@ class BellmanFordRouting(RoutingAlgorithm):
         for d in list(Direction):
             # Create new neighbor notification packet
             nn_pkt = BMFNewNeighborPkt(cube.id, None)
-            _ = cube.send_packet(d, nn_pkt)
+            if cube.connected_in_direction(d):
+                _ = cube.send_packet(d, nn_pkt)
 
 
     def update_distance_tbl(self, cube:RoutingCube, dv_pkt:BMFDistanceVectorPkt, rx_dir:Direction):
@@ -332,7 +333,8 @@ class BellmanFordRouting(RoutingAlgorithm):
         # Only update neighbors if distance table has not converged
         if cube.data.last_dv != dv_pkt.vector:
             for d in list(Direction):
-                _ = cube.send_packet(d, dv_pkt)
+                if cube.connected_in_direction(d):
+                    _ = cube.send_packet(d, dv_pkt)
             cube.data.last_dv = dv_pkt.vector
 
 

@@ -5,7 +5,7 @@ ADDR 0 5 6 rob1
 ADDR 6 5 0 robA
 
 # Delay for initialization
-WAIT 300
+WAIT 330
 PAUSE
 
 # Send a packet and remove the destination robot

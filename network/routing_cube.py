@@ -145,6 +145,11 @@ class RoutingCube:
     # def set_face(self, direction: Direction, face):
     #     self.faces.set_face(direction, face)
 
+    def connected_in_direction(self, direction: Direction) -> bool:
+        #         # technically, real cubes wouldn't have access to this, but 
+        #         # real hardware could determine this information electrically
+        return self.ll_references.faces[direction.value] is not None
+
     def step(self, routing_algorithm):
         # Reset cycle-dependent diagnostic information
         self._stats.reset_cycle_dependent_stats()
