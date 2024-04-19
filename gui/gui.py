@@ -144,20 +144,49 @@ class PlotGUI(Observer):
             x, y, z = data.coordinates
             voxels[x,y,z] = 1
             facecolors[x,y,z] = data.facecolor()
+        
+        # Draw voxels on main axis
+        self.voxels = self.ax.voxels(voxels, facecolors=facecolors, edgecolor='k', picker=True)
+        plt.draw()
 
-        # Get stats text for GUI
+
+    def set_network_stats_text(self):
+        """
+        Rewrite the network statistics text box.
+        """
         statstext_properties = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
+        
+        # Get simulation info text
+        if self._model.recipe is not None:
+            next_recipe_instr_txt = self._model.recipe.peek_next_comm()
+        else:
+            next_recipe_instr_txt = None
+        if next_recipe_instr_txt is None:
+            next_recipe_instr_txt = "-"
+        else:
+            next_recipe_instr_txt = "\n    " + next_recipe_instr_txt
+            if self._model.recipe.wait_cycles_remaining > 0:
+                next_recipe_instr_txt += f"\n    (Waiting for {self._model.recipe.wait_cycles_remaining} cycles)"
+            if self._model.recipe.loop_iters_remaining > 0:
+                next_recipe_instr_txt += f"\n    (Looping for {self._model.recipe.loop_iters_remaining} iterations)"
+            elif self._model.recipe.loop_iters_remaining < 0:
+                next_recipe_instr_txt += f"\n    (Looping forever)"
+        
+        # Get network diagnostics text from simulator
         statstext = str(self._model.netgrid.stats)
+
+        # Combine simulation info with network diagnostics
         statstext = '\n'.join([
             "Simulation Info.",
             "-"*60,
             f"Cycle Number: {self._model.cycle_num}",
             f"Node Queue Size: {RoutingCube.MAX_Q_LEN}",
+            f"Next Recipe Instruction: {next_recipe_instr_txt}",
             "-"*60,
             statstext,
         ])
 
-        # Set stats text
+        # Set stats text in GUI
         self.ax_statstxt.cla()
         self.ax_statstxt.set_axis_off()
         self.ax_statstxt.text(
@@ -168,10 +197,6 @@ class PlotGUI(Observer):
             verticalalignment="top",
             bbox=statstext_properties
         )
-        
-        # Draw voxels on main axis
-        self.voxels = self.ax.voxels(voxels, facecolors=facecolors, edgecolor='k', picker=True)
-        plt.draw()
 
 
     def get_user_coords(self) -> tuple[int,int,int]|tuple[None,None,None]:
@@ -273,5 +298,6 @@ class PlotGUI(Observer):
         # Get user input from relevant widgets
         colormode = self.txt_colormode.text
 
-        # Plot voxels in the window
+        # Plot voxels in the window and update network stats text
         self.plot_voxels(colormode)
+        self.set_network_stats_text()
