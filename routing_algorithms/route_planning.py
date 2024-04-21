@@ -65,6 +65,7 @@ class NetworkShapeResponsePkt:
 @dataclasses.dataclass
 class RobotData:
     id: int = 0
+    tmp: int = 0
 
 def reverse_direction(direction:Direction) -> Direction:
     match direction:
@@ -133,7 +134,7 @@ class NetNodeRouting(RoutingAlgorithm):
                 if packet[0].id not in cube.data.previously_received_packet_ids:
                     # add it
                     cube.data.previously_received_packet_ids.append(packet[0].id)
-                    if cube.data.previously_received_packet_ids > MAX_PACKET_IDS:
+                    if len(cube.data.previously_received_packet_ids) > MAX_PACKET_IDS:
                         cube.data.previously_received_packet_ids.pop(0)
                     
                     # create a copy of the packet
@@ -191,9 +192,17 @@ class RoutePlanningRobot(RobotAlgorithm):
 
 
     def step(self, robot: Robot) -> RoutingCube:
-        pass
+        if robot.data.tmp % 40 == 39:
+            packet = NetworkShapeRequestPkt(robot.data.tmp)
+            for direction in Direction:
+                if robot.cube.connected_in_direction(direction):
+                    robot.cube.send_packet(direction, packet)
+                    break
+
+        robot.data.tmp += 1
         
 
     def power_on(self, robot: Robot):
-        robot.cube.data = RobotData()
+        robot.cube.data = NetNodeData()
+        robot.data = RobotData()
         pass

@@ -88,26 +88,9 @@ class RoutingCube:
         self._stats = value
     
     def connected_in_direction(self, direction: Direction) -> bool:
-        #         # technically, real cubes wouldn't have access to this, but 
-        #         # real hardware could determine this information electrically
+        # technically, real cubes wouldn't have access to this, but 
+        # real hardware could determine this information electrically
         return self.ll_references.faces[direction.value] is not None
-        # match direction:
-        #     case Direction.UP:
-        #         # technically, real cubes wouldn't have access to this, but 
-        #         # real hardware could determine this information electrically
-        #         return self.ll_references.faces[Direction.DOWN.value] is not None
-        #     case Direction.DOWN:
-        #         return self.ll_references.faces[Direction.UP.value] is not None
-        #     case Direction.WEST:
-        #         return self.ll_references.faces[Direction.EAST.value] is not None
-        #     case Direction.EAST:
-        #         return self.ll_references.faces[Direction.WEST.value] is not None
-        #     case Direction.NORTH:
-        #         return self.ll_references.faces[Direction.SOUTH.value] is not None
-        #     case Direction.SOUTH:
-        #         return self.ll_references.faces[Direction.NORTH.value] is not None
-        #     case _:
-        #         return False
         
     def send_packet(self, direction: Direction, packet):
         self._stats.num_pkts_sent += 1
