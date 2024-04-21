@@ -7,7 +7,7 @@ ADDR 6 5 0 robA
 ADDR 6 5 10 robB
 
 # Delay for initialization
-WAIT 300
+WAIT 330
 PAUSE
 
 # Send packets between pairs of robots, with some delay

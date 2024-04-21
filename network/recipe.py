@@ -427,6 +427,22 @@ class Recipe:
         self.paused = False
 
 
+    def peek_next_comm(self) -> str|None:
+        """
+        Helper method for generating a string version of the next recipe command and its
+        arguments.
+
+        :return: string representation of next command, or None if there is no next
+        command
+        """
+        if self.length > self.idx:
+            comm, args = self.commands[self.idx], self.command_args[self.idx]
+            strs = [comm.name] + [str(arg) for arg in args]
+            return ' '.join(strs)
+        else:
+            return None
+
+
     def __str__(self) -> str:
         with io.StringIO() as sio:
             sio.write("Recipe:")

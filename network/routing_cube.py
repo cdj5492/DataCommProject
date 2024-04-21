@@ -4,6 +4,9 @@ received on the faces (as opposed to the Faces object having a separate queue fo
 Face).
 [MD] 4/14/24 Added NodeDiagnostics class for tracking RoutingCube statistics at runtime.
 [MD] 4/16/24 RoutingCube IDs implemented.
+[MD] 4/18/24 Added cycle-dependent statistics to NodeDiagnostics class that are reset at
+the beginning of RoutingCube.step(). Updated RoutingCube.send_packet() to check for
+successful transmission and update the dropped packet diagnostics on its own.
 """
 
 import dataclasses
@@ -16,23 +19,49 @@ from .faces import Faces, Direction
 @dataclasses.dataclass
 class NodeDiagnostics:
     num_pkts_sent : int = 0
+    num_pkts_sent_this_cycle : int = 0
     num_pkts_received : int = 0
+    num_pkts_received_this_cycle : int = 0
     num_pkts_dropped : int = 0
+    num_pkts_dropped_this_cycle : int = 0
+    current_q_len : int = 0
     highest_q_len : int = 0
     is_robot : bool = False
     has_packet : bool = False
+
+
+    def reset_cycle_dependent_stats(self):
+        self.num_pkts_sent_this_cycle = 0
+        self.num_pkts_received_this_cycle = 0
+        self.num_pkts_dropped_this_cycle = 0
 
 
     def get_num_pkts_sent(self) -> int:
         return self.num_pkts_sent
     
 
+    def get_num_pkts_sent_this_cycle(self) -> int:
+        return self.num_pkts_sent_this_cycle
+    
+
     def get_num_pkts_received(self) -> int:
         return self.num_pkts_received
     
 
+    def get_num_pkts_received_this_cycle(self) -> int:
+        return self.num_pkts_received_this_cycle
+    
+
     def get_num_pkts_dropped(self) -> int:
         return self.num_pkts_dropped
+    
+
+    def get_num_pkts_dropped_this_cycle(self) -> int:
+        return self.num_pkts_dropped_this_cycle
+    
+
+    def get_current_q_len(self) -> int:
+        return self.current_q_len
     
 
     def get_highest_q_len(self) -> int:
@@ -81,6 +110,7 @@ class RoutingCube:
     @property
     def stats(self) -> NodeDiagnostics:
         self._stats.has_packet = self.has_packet()
+        self._stats.current_q_len = self._packets.qsize()
         return self._stats
     
     @stats.setter
@@ -92,10 +122,15 @@ class RoutingCube:
         # real hardware could determine this information electrically
         return self.ll_references.faces[direction.value] is not None
         
-    def send_packet(self, direction: Direction, packet):
+    def send_packet(self, direction: Direction, packet) -> bool:
         self._stats.num_pkts_sent += 1
+        self._stats.num_pkts_sent_this_cycle += 1
         # check if the face is connected to another cube
-        return self.ll_references.add_packet(direction, packet)
+        success = self.ll_references.add_packet(direction, packet)
+        if not success:
+            self._stats.num_pkts_dropped += 1
+            self._stats.num_pkts_dropped_this_cycle += 1
+        return success
     
     def get_packet(self) -> tuple[typing.Any, Direction]|tuple[None, None]:
         """
@@ -115,7 +150,14 @@ class RoutingCube:
     # def set_face(self, direction: Direction, face):
     #     self.faces.set_face(direction, face)
 
+    def connected_in_direction(self, direction: Direction) -> bool:
+        #         # technically, real cubes wouldn't have access to this, but 
+        #         # real hardware could determine this information electrically
+        return self.ll_references.faces[direction.value] is not None
+
     def step(self, routing_algorithm):
+        # Reset cycle-dependent diagnostic information
+        self._stats.reset_cycle_dependent_stats()
         # Perform routing actions
         routing_algorithm.route(self)
     
@@ -125,11 +167,13 @@ class RoutingCube:
 
         for pkt in received:
             self._stats.num_pkts_received += 1
+            self._stats.num_pkts_received_this_cycle += 1
             try:
                 self._packets.put_nowait(pkt)
             except queue.Full:
                 # Packet lost
                 self._stats.num_pkts_dropped += 1
+                self._stats.num_pkts_dropped_this_cycle += 1
 
             # Track highest recorded queue length
             q_len = self._packets.qsize()

@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from app.initialization import init_presenter
 from app.support import VALID_ROUTING_ALGOS, VALID_COLOR_CONFS
 from gui.gui import PlotGUI
+from network.routing_cube import RoutingCube
 
 
 def _get_argparser() -> argparse.ArgumentParser:
@@ -56,6 +57,12 @@ def _get_argparser() -> argparse.ArgumentParser:
         choices=VALID_COLOR_CONFS,
         help="Display color mode to use."
     )
+    parser.add_argument(
+        "--queuesize", "-q",
+        default=RoutingCube.MAX_Q_LEN,
+        type=int,
+        help="Maximum queue size for nodes."
+    )
     return parser
 
 
@@ -63,6 +70,9 @@ def main(argv):
     # Parse CLI args
     parser = _get_argparser()
     cliargs = parser.parse_args(argv)
+
+    # Set maximum node queue size
+    RoutingCube.MAX_Q_LEN = cliargs.queuesize
 
     # GUI frontend initialization
     model = init_presenter(cliargs.algorithm, cliargs.network, cliargs.recipe, cliargs.size)

@@ -13,7 +13,7 @@ Notes about creating color configurations:
  - See gui.utils.ColorConfGroup for information on configuration priority.
 """
 
-from gui.utils import ColorConfGroup, ColorNormalizer, ColorConditional, ColorGradient
+from gui.utils import ColorConfGroup, ColorNormalizer, ColorDefault, ColorConditional, ColorGradient
 from network.routing_cube import NodeDiagnostics
 
 
@@ -62,20 +62,42 @@ CONF_ANY_PKTS_DROPPED = ColorConditional(
 )
 
 
+def _robot_any_pkts_sent_this_cycle(diagnostics:NodeDiagnostics) -> bool:
+    return diagnostics.is_robot and diagnostics.num_pkts_sent_this_cycle > 0
+
+
+def _robot_any_pkts_received_this_cycle(diagnostics:NodeDiagnostics) -> bool:
+    return diagnostics.is_robot and diagnostics.num_pkts_received_this_cycle > 0
+
+
 # Color configuration that shows packet flow through the network while stepping
 CONF_PKT_FLOW = ColorConfGroup([
-    # Color a node red if it has a packet, or blue and transparent otherwise
-    ColorConditional(
-        priority=0,
-        on_color=ColorNormalizer(255, None, None),       # Red
-        off_color=ColorNormalizer(None, None, 255, 128), # Transparent blue
-        condition=NodeDiagnostics.get_has_packet
-    ),
-    # Color a node green and opaque if it's a robot, no effect otherwise
+    # Color a robot node green and make it opaque, color a normal node blue and make it transparent
     ColorConditional(
         priority=1,
-        on_color=ColorNormalizer(0, 255, 0, 255), # Opaque green
-        off_color=ColorNormalizer.null(),         # Cede to lower priority rules
+        on_color=ColorNormalizer(0, 255, 0, 255),  # Opaque green
+        off_color=ColorNormalizer(0, 0, 255, 128), # Transparent blue
         condition=NodeDiagnostics.get_is_robot
+    ),
+    # Color a robot node yellow if it has sent a packet this cycle, no effect otherwise
+    ColorConditional(
+        priority=2,
+        on_color=ColorNormalizer(255, 255, 0), # Yellow
+        off_color=ColorNormalizer.null(),      # Cede to lower priority rules
+        condition=_robot_any_pkts_sent_this_cycle
+    ),
+    # Color a robot node purple if it has received a packet this cycle, no effect otherwise
+    ColorConditional(
+        priority=3,
+        on_color=ColorNormalizer(255, 0, 255), # Purple
+        off_color=ColorNormalizer.null(),      # Cede to lower priority rules
+        condition=_robot_any_pkts_received_this_cycle
+    ),
+    # Color a node red if it has a packet, no effect otherwise
+    ColorConditional(
+        priority=4,
+        on_color=ColorNormalizer(255, 0, 0), # Red
+        off_color=ColorNormalizer.null(),    # Cede to lower priority rules
+        condition=NodeDiagnostics.get_has_packet
     ),
 ])
