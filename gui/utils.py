@@ -350,6 +350,32 @@ class ColorConfGroup:
     
 
 @dataclasses.dataclass
+class ColorDefault(ColorConf):
+    """
+    Color configuration that can be used to provide a default node color in
+    ColorConfGroups or on its own. Calling an instance of this class always returns the
+    normalized values of the color attribute. This class is always instantiated with
+    priority 0.
+    """
+    color : ColorNormalizer # Color to use all the time
+
+
+    def __init__(self, color:ColorNormalizer):
+        """
+        Create a default color configuration with priority 0.
+
+        :param color: node color
+        :return: default color configuration
+        """
+        self.color = color
+        return super().__init__(priority=0)
+
+
+    def __call__(self, *args, **kwargs) -> ColorVals:
+        return self.color.get_normalized()
+    
+
+@dataclasses.dataclass
 class ColorConditional(ColorConf):
     """
     Color configuration that operates on a conditional function. Calling an instance of

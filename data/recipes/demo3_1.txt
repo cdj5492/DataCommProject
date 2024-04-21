@@ -1,0 +1,19 @@
+# Demo network 3 recipe - infinite packet sending with two pairs of stationary robots
+
+# Add four robots on opposing corners
+ADDR 0 5 6 rob1
+ADDR 5 0 6 rob2
+ADDR 6 5 0 robA
+ADDR 6 5 10 robB
+
+# Delay for initialization
+WAIT 330
+PAUSE
+
+# Send packets between pairs of robots, with some delay
+LOOP -1
+SEND 42 rob2 rob1
+WAIT 2
+SEND 69 robA robB
+WAIT 4
+ENDL

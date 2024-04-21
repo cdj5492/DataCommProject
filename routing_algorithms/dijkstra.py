@@ -6,7 +6,7 @@ from network.robot import Robot
 from network.routing_cube import RoutingCube
 from network.faces import Direction
 from robot_algorithm.robot_algorithm import RobotAlgorithm
-from routing_algorithms.helpers import node_addr_t, determine_tx_dir, determine_tx_addr
+from routing_algorithms.helpers import node_addr_t, determine_tx_dir, determine_tx_pos
 from routing_algorithms.routing_algorithm import RoutingAlgorithm
 
 
