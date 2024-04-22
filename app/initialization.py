@@ -98,7 +98,7 @@ def init_simulator(routing_algo_name:str, net_file_path:os.PathLike|None=None) -
         cubes = init_routingcubes_from_file(net_file_path)
         for cube in cubes:
             x, y, z = cube.position
-            grid.add_node(x, y, z, cube)
+            grid.add_node(x, y, z, None)
 
             # Track maximum cube coordinates
             if x > max_x:

@@ -17,7 +17,7 @@ from routing_algorithms.helpers import node_addr_t
 
 @dataclasses.dataclass
 class GPacket:
-    destinationaddress : node_addr_t
+    dest_addr : node_addr_t
 
 # example of how to use the RoutingAlgorithm class
 class RWRoute(RoutingAlgorithm):
@@ -32,8 +32,11 @@ class RWRoute(RoutingAlgorithm):
         connectedDirections = []
         if packet is not None:
             print(packet)
-            if cube.id == packet.destinationaddress:
+            if cube.id == packet.dest_addr:
                 return
+            #for d in list(Direction):
+             #   if(cube.connected_in_direction(d) is False):
+              #      cube.send_packet(d, packet.copy())
             for direction in Direction:
                 if cube.connected_in_direction(direction):
                     connectedDirections.append(direction)
@@ -45,6 +48,7 @@ class RWRoute(RoutingAlgorithm):
         # Called when a packet transmission needs to be simulated.
     def send_packet(self, cube: RoutingCube, dest_addr, data) -> None:
         cube.faces.add_packet(GPacket(dest_addr))
+        
 
         
     # do nothing when first powered on for this example
@@ -69,7 +73,8 @@ class RWRobot(RobotAlgorithm):
         
         if robot.cube.data.step % 2 == 0:
             packetData = random.randint(0, 100)
-            packet = {"data": packetData}
+            #packet = {"data": packetData}
+            packet = GPacket(dest_addr=packetData)  # Assuming max_node_address is defined somewhere
             face = random.randint(0, 5)
             robot.send_packet(Direction(face), packet)
 
