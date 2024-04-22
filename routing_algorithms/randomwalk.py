@@ -49,7 +49,13 @@ class RWRoute(RoutingAlgorithm):
         return cube
         # Called when a packet transmission needs to be simulated.
     def send_packet(self, cube: RoutingCube, dest_addr, data) -> None:
-        cube.faces.add_packet(GPacket(dest_addr, data))
+        connectedDirections = []
+        for direction in Direction:
+            if cube.connected_in_direction(direction):
+                connectedDirections.append(direction)
+        randomDirection = random.choice(connectedDirections)
+
+        cube.send_packet(randomDirection, GPacket(dest_addr, data))
         
 
         
@@ -86,5 +92,10 @@ class RWRobot(RobotAlgorithm):
         robot.cube.data.step = 0
 
     def send_packet(self, robot: Robot, dest_addr, data) -> None:
-        robot.cube.faces.add_packet(GPacket(dest_addr, data))
+        connectedDirections = []
+        for direction in Direction:
+            if robot.cube.connected_in_direction(direction):
+                connectedDirections.append(direction)
+        randomDirection = random.choice(connectedDirections)
 
+        robot.cube.send_packet(randomDirection, GPacket(dest_addr, data))
