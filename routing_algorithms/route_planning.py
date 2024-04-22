@@ -386,7 +386,7 @@ class RoutePlanningRobot(RobotAlgorithm):
         return path
 
     def step(self, robot: Robot) -> RoutingCube:
-        # hardcode determine shape of network
+        # hardcode determine shape of network. Not a great way of doing it, but it works
         if robot.data.tmp == 40:
             self.request_network_shape(robot, robot.cube.id)
             print(f"Request with ID {robot.cube.id} sent")
