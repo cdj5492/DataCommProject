@@ -108,9 +108,6 @@ def init_simulator(routing_algo_name:str, net_file_path:os.PathLike|None=None) -
             if z > max_z:
                 max_z = z
     
-    # print out all the nodes in the grid
-    for cube in grid.get_all_nodes():
-        print(cube)
 
     max_pos = max(max_x, max_y, max_z) + 1
     return grid, (max_pos, max_pos, max_pos)

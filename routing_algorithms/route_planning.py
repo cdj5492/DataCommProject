@@ -20,6 +20,36 @@ RP_DEFAULT_LINK_COST = 1
 
 MAX_PACKET_IDS = 10
 
+class Path:
+    def __init__(self, path: list[Direction]):
+        self.path = path
+        # where in the path routing currently is
+        self.path_pos = 0
+        
+        self.reversed = False
+    
+    def next(self):
+        if self.path_pos >= len(self.path) or self.path_pos < 0:
+            return None
+        
+        ret_val = self.path[self.path_pos]
+
+        if self.reversed:
+            self.path_pos -= 1
+        else:
+            self.path_pos += 1
+        
+        return ret_val
+    
+    def copy(self):
+        copied = Path(self.path.copy())
+        copied.path_pos = self.path_pos
+        copied.reversed = self.reversed
+        return copied
+    
+    def __repr__(self) -> str:
+        return f"Path(path={self.path}, path_pos={self.path_pos}, reversed={self.reversed})"
+
 @dataclasses.dataclass
 class RequestPositionPkt:
     """
@@ -56,16 +86,48 @@ class NetNodeData:
 @dataclasses.dataclass
 class NetworkShapeRequestPkt:
     id: int = 0
-    path_taken: list[Direction] = dataclasses.field(default_factory=list)
+    # path_taken: list[Direction] = dataclasses.field(default_factory=list)
+    path_taken: Path = Path([])
 
 @dataclasses.dataclass
 class NetworkShapeResponsePkt:
-    path_to_take: list[Direction] = dataclasses.field(default_factory=list)
+    # path_to_take: list[Direction] = dataclasses.field(default_factory=list)
+    path_to_take: Path = Path([])
+    node_position: tuple[int, int, int] = (0, 0, 0)
     
 @dataclasses.dataclass
 class RobotData:
     id: int = 0
     tmp: int = 0
+
+class Graph:
+    def __init__(self):
+        self.graph = {}
+
+    def add_edge(self, node1, node2, cost):
+        if node1 not in self.graph:
+            self.graph[node1] = []
+        if node2 not in self.graph:
+            self.graph[node2] = []
+
+        self.graph[node1].append((node2, cost))
+        self.graph[node2].append((node1, cost))  # For bidirectional graph
+    
+    def add_node(self, node):
+        if node not in self.graph:
+            self.graph[node] = []
+
+        # check for nodes around this node and add edges
+        for direction in Direction:
+            neighbor = determine_tx_pos(node, direction)
+            if neighbor is not None:
+                self.add_edge(node, neighbor, RP_DEFAULT_LINK_COST)
+
+    def get_neighbors(self, node):
+        if node in self.graph:
+            return self.graph[node]
+        return []
+    
 
 def reverse_direction(direction:Direction) -> Direction:
     match direction:
@@ -130,22 +192,31 @@ class NetNodeRouting(RoutingAlgorithm):
                 cube.data.position_known = True
 
             elif isinstance(packet[0], NetworkShapeRequestPkt):
-                # check if this packet has been received before
+                # check if I know my own position
+                if not cube.data.position_known:
+                    # put packet back in the queue
+                    cube.faces.add_packet(packet[1], packet[0])
+                    continue
+
+                # check if this packet has been received before (avoid loops)
                 if packet[0].id not in cube.data.previously_received_packet_ids:
                     # add it
                     cube.data.previously_received_packet_ids.append(packet[0].id)
+                    # if the list is too long, remove the oldest packet
                     if len(cube.data.previously_received_packet_ids) > MAX_PACKET_IDS:
                         cube.data.previously_received_packet_ids.pop(0)
                     
                     # create a copy of the packet
                     new_packet = NetworkShapeRequestPkt(packet[0].id)
                     new_packet.path_taken = packet[0].path_taken.copy()
+                    new_packet.path_taken.reversed = True
+                    new_packet.path_taken.path_pos = len(new_packet.path_taken.path) - 1
                     
                     # send a packet back in the direction it came from
                     cube.send_packet(packet[1], NetworkShapeResponsePkt(new_packet.path_taken))
                     
                     # add direction packet came from to path_taken
-                    new_packet.path_taken.append(packet[1])
+                    new_packet.path_taken.path.append(packet[1])
                     
                     # send packet in all directions except the one it came from
                     for direction in Direction:
@@ -153,12 +224,12 @@ class NetNodeRouting(RoutingAlgorithm):
                             cube.send_packet(direction, new_packet)
 
             elif isinstance(packet[0], NetworkShapeResponsePkt):
-                # route packet according to path_to_take
-                try:
-                    next_direction = packet[0].path_to_take.pop(0)
+                # next_direction = packet[0].path_to_take.pop(0)
+                next_direction = packet[0].path_to_take.next()
+                if next_direction is not None:
                     cube.send_packet(next_direction, packet[0])
-                except IndexError:
-                    print ("Packet never reached destination. Got stuck at node: ", cube)
+                else:
+                    print(f"Packet {packet[0]} dropped")
                 
 
     def power_on(self, cube: RoutingCube):
@@ -192,12 +263,15 @@ class RoutePlanningRobot(RobotAlgorithm):
 
 
     def step(self, robot: Robot) -> RoutingCube:
-        if robot.data.tmp % 40 == 39:
+        if robot.data.tmp % 20 == 19:
             packet = NetworkShapeRequestPkt(robot.data.tmp)
             for direction in Direction:
                 if robot.cube.connected_in_direction(direction):
                     robot.cube.send_packet(direction, packet)
                     break
+                
+        for packet in robot.cube.faces.get_all_packets():
+            pass
 
         robot.data.tmp += 1
         
@@ -205,4 +279,5 @@ class RoutePlanningRobot(RobotAlgorithm):
     def power_on(self, robot: Robot):
         robot.cube.data = NetNodeData()
         robot.data = RobotData()
+    
         pass
