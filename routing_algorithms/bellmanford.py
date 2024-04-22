@@ -449,3 +449,7 @@ class BellmanFordRobot(RobotAlgorithm):
     def power_on(self, robot: Robot):
         # BellmanFordRobot.CUBE_ROUTING_ALGO.power_on(robot.cube)
         pass
+
+
+    def send_packet(self, robot: Robot, dest_addr, data):
+        BellmanFordRobot.CUBE_ROUTING_ALGO.send_packet(robot.cube, dest_addr, data)
