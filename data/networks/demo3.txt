@@ -1,4 +1,4 @@
-# Larger network
+# Demo network 3 - larger 3D network
 
 # Line parallel to x-axis
 0 5 5
