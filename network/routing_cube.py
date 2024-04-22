@@ -143,6 +143,17 @@ class RoutingCube:
             return self._packets.get_nowait()
         else:
             return None, None
+    
+    def add_packet_internal(self, packet, direction: Direction) -> bool:
+        """
+        Adds a packet to the internal queue of this cube. Should only be used by robots
+        on their contained routing cube to scrape relevant packets out
+        """
+        try:
+            self._packets.put_nowait((packet, direction))
+            return True
+        except queue.Full:
+            return False
         
     def has_packet(self) -> bool:
         return not self._packets.empty()

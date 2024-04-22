@@ -234,6 +234,8 @@ class Recipe:
             id = None
         else:
             x, y, z, id = args
+        
+        print(f"Adding node at ({x},{y},{z}) with ID {id}")
         netgrid.add_node(x, y, z, id)
 
 
@@ -250,6 +252,7 @@ class Recipe:
             id = None
         else:
             x, y, z, id = args
+        
         netgrid.add_robot(x, y, z, id)
 
 

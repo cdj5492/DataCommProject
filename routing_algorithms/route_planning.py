@@ -18,7 +18,7 @@ from routing_algorithms.routing_algorithm import RoutingAlgorithm
 
 RP_DEFAULT_LINK_COST = 1
 
-MAX_PACKET_IDS = 10
+MAX_PACKET_IDS = 20
 
 class Path:
     def __init__(self, path: list[Direction]):
@@ -237,7 +237,7 @@ class NetNodeRouting(RoutingAlgorithm):
                     new_packet.path_taken.path_pos = len(new_packet.path_taken.path) - 1
                     
                     # send a packet back in the direction it came from
-                    print(f"My name is {cube.id}")
+                    print(f"My id is: {cube.id}")
                     cube.send_packet(packet[1], NetworkShapeResponsePkt(new_packet.path_taken, cube.data.position, cube.id))
                     
                     # add direction packet came from to path_taken
@@ -247,6 +247,8 @@ class NetNodeRouting(RoutingAlgorithm):
                     for direction in Direction:
                         if direction != packet[1] and cube.connected_in_direction(direction):
                             cube.send_packet(direction, new_packet)
+                else:
+                    print("Avoiding a loop")
 
             elif isinstance(packet[0], NetworkShapeResponsePkt):
                 # next_direction = packet[0].path_to_take.pop(0)
@@ -283,6 +285,9 @@ class NetNodeRouting(RoutingAlgorithm):
 
 
 class RoutePlanningRobot(RobotAlgorithm):
+    # delete this static class variable later
+    FIRST_ROBOT = True
+    
     def __init__(self):
         pass
     
@@ -343,9 +348,12 @@ class RoutePlanningRobot(RobotAlgorithm):
 
     def step(self, robot: Robot) -> RoutingCube:
         if robot.data.tmp == 40:
-            self.request_network_shape(robot, robot.data.tmp)
+            if RoutePlanningRobot.FIRST_ROBOT:
+                RoutePlanningRobot.FIRST_ROBOT = False
+                self.request_network_shape(robot, robot.cube.id)
+                print(f"Request with ID {robot.cube.id} sent")
             
-        if robot.data.tmp == 80:
+        if robot.data.tmp == 120:
             dest_node = 'robA'
             nodePath = self.dijkstra(robot, dest_node)
             print(f"Robot {robot.data.id} found path to {dest_node}: {nodePath}")
@@ -359,15 +367,17 @@ class RoutePlanningRobot(RobotAlgorithm):
         
         for packet in incoming_packets:
             if isinstance(packet[0], NetworkShapeResponsePkt):
-                print(f"Robot {robot.data.id} received packet {packet[0]} from direction {packet[1]}")
+                # print(f"Robot {robot.data.id} received packet {packet[0]} from direction {packet[1]}")
                 
                 # add node to graph
                 robot.data.network_graph.add_node(packet[0].node_position)
                 
                 robot.data.node_addr_lookup[packet[0].node_name] = packet[0].node_position
+                
+                print(f"added node {packet[0].node_name} at {packet[0].node_position}")
             else:
                 # add it back into the queue for processing by the internal routing cube
-                robot.cube.faces.add_packet(packet[1], packet[0])
+                robot.cube.add_packet_internal(packet[0], packet[1])
 
         robot.data.tmp += 1
         
@@ -375,5 +385,3 @@ class RoutePlanningRobot(RobotAlgorithm):
     def power_on(self, robot: Robot):
         robot.cube.data = NetNodeData()
         robot.data = RobotData()
-    
-        pass
