@@ -441,8 +441,11 @@ class BellmanFordRobot(RobotAlgorithm):
 
 
     def step(self, robot: Robot) -> RoutingCube:
-        BellmanFordRobot.CUBE_ROUTING_ALGO.route(robot.cube)
+        # TODO NetworkGrid already calls RoutingAlgorithm methods on the internal RoutingCube
+        # BellmanFordRobot.CUBE_ROUTING_ALGO.route(robot.cube)
+        pass
         
 
     def power_on(self, robot: Robot):
-        BellmanFordRobot.CUBE_ROUTING_ALGO.power_on(robot.cube)
+        # BellmanFordRobot.CUBE_ROUTING_ALGO.power_on(robot.cube)
+        pass
