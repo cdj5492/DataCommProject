@@ -5,14 +5,14 @@ ADDR 0 5 6 rob1
 ADDR 6 5 0 robA
 
 # Delay for nodes to figure out their positions
-WAIT 20
+WAIT 18
 PAUSE
 
 # Delay before robot requests network shape
 WAIT 20
 PAUSE
 
-WAIT 80
+WAIT 70
 PAUSE
 
 # Send a packet and remove the destination robot
