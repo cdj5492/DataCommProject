@@ -116,6 +116,11 @@ class RoutingCube:
     @stats.setter
     def stats(self, value:NodeDiagnostics):
         self._stats = value
+    
+    def connected_in_direction(self, direction: Direction) -> bool:
+        # technically, real cubes wouldn't have access to this, but 
+        # real hardware could determine this information electrically
+        return self.ll_references.faces[direction.value] is not None
         
     def send_packet(self, direction: Direction, packet) -> bool:
         self._stats.num_pkts_sent += 1
@@ -138,6 +143,17 @@ class RoutingCube:
             return self._packets.get_nowait()
         else:
             return None, None
+    
+    def add_packet_internal(self, packet, direction: Direction) -> bool:
+        """
+        Adds a packet to the internal queue of this cube. Should only be used by robots
+        on their contained routing cube to scrape relevant packets out
+        """
+        try:
+            self._packets.put_nowait((packet, direction))
+            return True
+        except queue.Full:
+            return False
         
     def has_packet(self) -> bool:
         return not self._packets.empty()
@@ -176,5 +192,4 @@ class RoutingCube:
                 self._stats.highest_q_len = q_len
         
     def __repr__(self) -> str:
-        packets = [f"{Direction(i).name}: {self.faces.face_has_packet(Direction(i))}" for i in range(6)]
-        return f"RoutingCube at {self.position}: {packets}"
+        return f"RoutingCube at {self.position}: (data: {self.data})"

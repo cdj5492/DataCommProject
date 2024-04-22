@@ -5,6 +5,8 @@ remove_node_by_id(), and send_packet_by_coords(). Added id argument to add_node(
 add_robot().
 [MD] 4/19/24 Added NetworkGrid.stats attribute for storing NetworkDiagnostics and
 NetworkGrid.update_net_stats() for tracking network statistics.
+[MD] 4/22/24 Modified NetworkGrid.send_packet() to use the robot_algorithm to do the
+sending if the source node belongs to a robot.
 """
 
 from .routing_cube import RoutingCube
@@ -229,7 +231,14 @@ class NetworkGrid:
         src_node = self.get_node_by_id(src_id)
         if src_node is None:
             raise ValueError(f"Cannot trigger packet transmission from node ID:'{src_id}'; Node does not exist")
-        self.routing_algorithm.send_packet(src_node, dest_id, data)
+        
+        if src_node.stats.is_robot:
+            for robot in self.robot_list:
+                if robot.cube.id == src_node.id:
+                    self.robot_algorithm.send_packet(robot, dest_id, data)
+                    break
+        else:
+            self.routing_algorithm.send_packet(src_node, dest_id, data)
 
     def send_packet_by_coords(self, data, src_coords:tuple[int,int,int], dest_coords:tuple[int,int,int]):
         # Retrieves the source node and calls the routing algorithm to trigger packet transmission

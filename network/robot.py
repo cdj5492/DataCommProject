@@ -14,6 +14,7 @@ class Robot:
     def __init__(self, cube: RoutingCube) -> None:
         self.cube = cube
         self.cube.stats.is_robot = True
+        self.data = None
         
     def send_packet(self, direction: Direction, packet):
         return self.cube.send_packet(direction, packet)

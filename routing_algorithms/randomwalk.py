@@ -14,10 +14,12 @@ from dataclasses import dataclass
 import random
 import dataclasses
 from routing_algorithms.helpers import node_addr_t
+import typing
 
 @dataclasses.dataclass
 class GPacket:
     dest_addr : node_addr_t
+    data: typing.Any
 
 # example of how to use the RoutingAlgorithm class
 class RWRoute(RoutingAlgorithm):
@@ -47,7 +49,7 @@ class RWRoute(RoutingAlgorithm):
         return cube
         # Called when a packet transmission needs to be simulated.
     def send_packet(self, cube: RoutingCube, dest_addr, data) -> None:
-        cube.faces.add_packet(GPacket(dest_addr))
+        cube.faces.add_packet(GPacket(dest_addr, data))
         
 
         
@@ -70,16 +72,19 @@ class RWRobot(RobotAlgorithm):
     def step(self, robot: Robot) -> None:
         # demo robot algorithm that just sends sends a packet
         # containing random data out of a random face once every few time steps
-        
+        """
         if robot.cube.data.step % 2 == 0:
             packetData = random.randint(0, 100)
-            #packet = {"data": packetData}
-            packet = GPacket(dest_addr=packetData)  # Assuming max_node_address is defined somewhere
+           # packet = GPacket(dest_addr=packetData)  # Assuming max_node_address is defined somewhere
             face = random.randint(0, 5)
-            robot.send_packet(Direction(face), packet)
+            robot.send_packet(Direction(face), GPacket(dest_addr))
 
         robot.cube.data.step += 1
-    
+ """   
     def power_on(self, robot: Robot) -> None:
         robot.cube.data = RobotData()
         robot.cube.data.step = 0
+
+    def send_packet(self, robot: Robot, dest_addr, data) -> None:
+        robot.cube.faces.add_packet(GPacket(dest_addr, data))
+
