@@ -94,42 +94,58 @@ class NetworkShapeResponsePkt:
     # path_to_take: list[Direction] = dataclasses.field(default_factory=list)
     path_to_take: Path = Path([])
     node_position: tuple[int, int, int] = (0, 0, 0)
-    
-@dataclasses.dataclass
-class RobotData:
-    id: int = 0
-    tmp: int = 0
+    node_name: node_addr_t = ''
 
 class Graph:
     def __init__(self):
         self.graph = {}
 
-    def add_edge(self, node1, node2, cost):
+    def add_edge(self, node1, node2):
         if node1 not in self.graph:
             self.graph[node1] = []
         if node2 not in self.graph:
             self.graph[node2] = []
 
-        self.graph[node1].append((node2, cost))
-        self.graph[node2].append((node1, cost))  # For bidirectional graph
+        self.graph[node1].append(node2)
+        self.graph[node2].append(node1)  # For bidirectional graph
     
     def add_node(self, node):
         if node not in self.graph:
             self.graph[node] = []
 
         # check for nodes around this node and add edges
-        for direction in Direction:
-            neighbor = determine_tx_pos(node, direction)
-            if neighbor is not None:
-                self.add_edge(node, neighbor, RP_DEFAULT_LINK_COST)
+        if (node[0] + 1, node[1], node[2]) in self.graph:
+            self.add_edge(node, (node[0] + 1, node[1], node[2]))
+        if (node[0] - 1, node[1], node[2]) in self.graph:
+            self.add_edge(node, (node[0] - 1, node[1], node[2]))
+        if (node[0], node[1] + 1, node[2]) in self.graph:
+            self.add_edge(node, (node[0], node[1] + 1, node[2]))
+        if (node[0], node[1] - 1, node[2]) in self.graph:
+            self.add_edge(node, (node[0], node[1] - 1, node[2]))
+        if (node[0], node[1], node[2] + 1) in self.graph:
+            self.add_edge(node, (node[0], node[1], node[2] + 1))
+        if (node[0], node[1], node[2] - 1) in self.graph:
+            self.add_edge(node, (node[0], node[1], node[2] - 1))
+            
+    def remove_node(self, node):
+        if node in self.graph:
+            for neighbor in self.graph[node]:
+                self.graph[neighbor].remove(node)
+            del self.graph[node]
 
     def get_neighbors(self, node):
         if node in self.graph:
             return self.graph[node]
         return []
     
+@dataclasses.dataclass
+class RobotData:
+    id: int = 0
+    tmp: int = 0
+    network_graph: Graph = Graph()
+    node_addr_lookup: dict[node_addr_t, node_pos_t] = {}
 
-def reverse_direction(direction:Direction) -> Direction:
+def reverse_direction(direction: Direction) -> Direction:
     match direction:
         case Direction.UP:
             return Direction.DOWN
@@ -159,15 +175,17 @@ class NetNodeRouting(RoutingAlgorithm):
             cube.data.pending_position_requests.clear()
         
         # if there are packets in the queue, process them
-        for packet in cube.faces.get_all_packets():
-            print(f"Node {cube.id} received packet {packet[0]} from direction {packet[1]}")
+        # for packet in cube.faces.get_all_packets():
+        packet = cube.get_packet()
+        if packet[0] is not None:
+            # print(f"Node {cube.id} received packet {packet[0]} from direction {packet[1]}")
             if isinstance(packet[0], RequestPositionPkt):
                 if not cube.data.position_known:
                     cube.data.pending_position_requests.append(packet[1])
                 else:
                     # send a response packet with this node's position in the direction it came from
                     cube.send_packet(packet[1], NeighborPositionPkt(cube.data.position))
-                    print(f"Node {cube.id} sent position response to direction {packet[1]}")
+                    # print(f"Node {cube.id} sent position response to direction {packet[1]}")
 
             elif isinstance(packet[0], NeighborPositionPkt):
                 # determine my position relative to the neighbor
@@ -196,7 +214,7 @@ class NetNodeRouting(RoutingAlgorithm):
                 if not cube.data.position_known:
                     # put packet back in the queue
                     cube.faces.add_packet(packet[1], packet[0])
-                    continue
+                    return
 
                 # check if this packet has been received before (avoid loops)
                 if packet[0].id not in cube.data.previously_received_packet_ids:
@@ -213,7 +231,7 @@ class NetNodeRouting(RoutingAlgorithm):
                     new_packet.path_taken.path_pos = len(new_packet.path_taken.path) - 1
                     
                     # send a packet back in the direction it came from
-                    cube.send_packet(packet[1], NetworkShapeResponsePkt(new_packet.path_taken))
+                    cube.send_packet(packet[1], NetworkShapeResponsePkt(new_packet.path_taken, cube.data.position, cube.id))
                     
                     # add direction packet came from to path_taken
                     new_packet.path_taken.path.append(packet[1])
@@ -245,7 +263,7 @@ class NetNodeRouting(RoutingAlgorithm):
         for direction in Direction:
             if cube.connected_in_direction(direction):
                 cube.send_packet(direction, RequestPositionPkt())
-                print(f"Node {cube.id} sent position request to direction {direction}")
+                # print(f"Node {cube.id} sent position request to direction {direction}")
                 no_neighbors = False
                 break
         if no_neighbors:
@@ -263,15 +281,29 @@ class RoutePlanningRobot(RobotAlgorithm):
 
 
     def step(self, robot: Robot) -> RoutingCube:
-        if robot.data.tmp % 20 == 19:
+        if robot.data.tmp % 40 == 39:
             packet = NetworkShapeRequestPkt(robot.data.tmp)
             for direction in Direction:
                 if robot.cube.connected_in_direction(direction):
                     robot.cube.send_packet(direction, packet)
                     break
+        
+
+        incoming_packets = []
+        while True:
+            packet = robot.cube.get_packet()
+            if packet[0] is None:
+                break
+            incoming_packets.append(packet)
+        
+        for packet in incoming_packets:
+            if isinstance(packet[0], NetworkShapeResponsePkt):
+                print(f"Robot {robot.data.id} received packet {packet[0]} from direction {packet[1]}")
                 
-        for packet in robot.cube.faces.get_all_packets():
-            pass
+                # add node to graph
+                robot.data.network_graph.add_node(packet[0].node_position)
+                
+                robot.data.node_addr_lookup[packet[0].node_name] = packet[0].node_position
 
         robot.data.tmp += 1
         
