@@ -229,7 +229,14 @@ class NetworkGrid:
         src_node = self.get_node_by_id(src_id)
         if src_node is None:
             raise ValueError(f"Cannot trigger packet transmission from node ID:'{src_id}'; Node does not exist")
-        self.routing_algorithm.send_packet(src_node, dest_id, data)
+
+        if src_node.stats.is_robot:
+            for robot in self.robot_list:
+                if robot.cube.id == src_node.id:
+                    self.robot_algorithm.send_packet(robot, dest_id, data)
+                    break
+        else:
+            self.routing_algorithm.send_packet(src_node, dest_id, data)
 
     def send_packet_by_coords(self, data, src_coords:tuple[int,int,int], dest_coords:tuple[int,int,int]):
         # Retrieves the source node and calls the routing algorithm to trigger packet transmission
