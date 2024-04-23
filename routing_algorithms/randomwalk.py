@@ -15,7 +15,7 @@ import random
 import dataclasses
 from routing_algorithms.helpers import node_addr_t
 import typing
-
+random.seed(11)
 @dataclasses.dataclass
 class GPacket:
     dest_addr : node_addr_t
