@@ -347,6 +347,7 @@ class BellmanFordRouting(RoutingAlgorithm):
         """
         # This cube is the destination
         if pkt.dest_addr == cube.id:
+            cube.notify_correctly_routed_pkt()
             return
         
         # Route the packet toward the destination using Bellman Ford
