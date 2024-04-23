@@ -425,12 +425,9 @@ class RoutePlanningRobot(RobotAlgorithm):
                 # print(f"added node {packet[0].node_name} at {packet[0].node_position}")
             # elif isinstance(packet[0], DataPacket) and packet[0].dest_addr == robot.cube.id and packet[0].path_to_take.reversed:
             elif isinstance(packet[0], DataPacket):
-                print("got here1")
                 if packet[0].src_addr == robot.cube.id:
-                    print("got here2")
                     robot.cube.notify_correctly_routed_pkt()
                     if packet[0].path_to_take.reversed:
-                        print("got here3")
                         print(f"Robot {robot.data.id} detected removed node. Requesting network shape")
                         print(f"Robot {robot.data.id} received data packet: {packet[0].data}")
                         self.request_network_shape(robot, robot.cube.id)
