@@ -1,0 +1,13 @@
+# Simple moving robot simulation for network 2
+
+# Delay for initialization
+WAIT 330
+PAUSE
+
+# Add two robots
+ADDR 0 5 6 rob1
+ADDR 6 5 0 robA
+
+# Delay for initialization
+WAIT 330
+PAUSE
