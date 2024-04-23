@@ -20,6 +20,7 @@ class NetworkDiagnostics:
     total_pkts_dropped : int = 0
     total_pkts_dropped_this_cycle : int = 0
     total_pkts_queued : int = 0
+    correctly_routed_pkts : int = 0
 
     # Per-node statistics
     max_total_pkts_sent : int = 0
@@ -60,6 +61,7 @@ class NetworkDiagnostics:
         self.total_pkts_queued += nodestats.current_q_len
         self.max_node_memory_usage_this_cycle = max(self.max_node_memory_usage_this_cycle, nodestats.total_cycle_mem)
         self.max_node_memory_usage = max(self.max_node_memory_usage, nodestats.max_mem)
+        self.correctly_routed_pkts += nodestats.correctly_routed_pkts_this_cycle
 
         # Per-node
         if self.max_total_pkts_sent < nodestats.num_pkts_sent:
@@ -95,6 +97,7 @@ class NetworkDiagnostics:
                     f"Pkts Received This Cycle: {self.total_pkts_received_this_cycle}",
                     f"Total Pkts Dropped: {self.total_pkts_dropped}",
                     f"Pkts Dropped This Cycle: {self.total_pkts_dropped_this_cycle}",
+                    f"Packets Correctly Routed: {self.correctly_routed_pkts}",
                     f"Total Pkts in Queue: {self.total_pkts_queued}",
                     "-"*60,
                     "Per-Node Statistics",

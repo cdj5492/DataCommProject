@@ -25,6 +25,7 @@ class NodeDiagnostics:
     num_pkts_received_this_cycle : int = 0
     num_pkts_dropped : int = 0
     num_pkts_dropped_this_cycle : int = 0
+    correctly_routed_pkts_this_cycle : int = 0
     max_mem : int = 0
     total_cycle_mem : int = 0
     current_q_len : int = 0
@@ -37,6 +38,7 @@ class NodeDiagnostics:
         self.num_pkts_sent_this_cycle = 0
         self.num_pkts_received_this_cycle = 0
         self.num_pkts_dropped_this_cycle = 0
+        self.correctly_routed_pkts_this_cycle = 0
         self.max_mem = 0
         self.total_cycle_mem = 0
 
@@ -121,6 +123,10 @@ class RoutingCube:
     @stats.setter
     def stats(self, value:NodeDiagnostics):
         self._stats = value
+    
+    # TODO: Bad practice, but not enough time for something better
+    def notify_correctly_routed_pkt(self):
+        self._stats.correctly_routed_pkts_this_cycle += 1
     
     def connected_in_direction(self, direction: Direction) -> bool:
         # technically, real cubes wouldn't have access to this, but 

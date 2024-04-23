@@ -278,8 +278,7 @@ class SpanningTreeRouting(RoutingAlgorithm):
 
             elif isinstance(pkt, MSTDataPkt):
                 if pkt.dest_addr == cube.id:
-                    self.got_packet += 1
-                    print("The number of packets got " + str(self.got_packet))
+                    cube.notify_correctly_routed_pkt()
                 else:        
                     to_root = True
                     path_index = 0
