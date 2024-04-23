@@ -1,0 +1,24 @@
+# Demo network 2 recipe to show network changes
+
+# Add robots
+ADDR 0 0 1 rob1
+ADDR 6 0 1 rob2
+
+# Initialization delay
+WAIT 150
+PAUSE
+
+# Send one packet
+SEND 99 rob1 rob2
+WAIT 19
+PAUSE
+
+# Add a new node
+ADDN 3 0 0
+
+# Network update delay
+WAIT 50
+PAUSE
+
+# Send another packet
+SEND 99 rob1 rob2

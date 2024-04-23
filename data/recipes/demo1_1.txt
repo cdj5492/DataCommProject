@@ -1,0 +1,15 @@
+# Demo network 1 recipe for simple robot operation
+
+# Attach robots
+ADDR 0 0 1 rob1
+ADDR 4 4 1 rob2
+
+# Initialization delay
+WAIT 150
+PAUSE
+
+# Demonstrate packet sending
+LOOP -1
+SEND 99 rob2 rob1
+WAIT 9
+ENDL

@@ -1,4 +1,4 @@
-# Simple infinite simulation for network 2
+# Demo network 3 recipe - infinite packet sending with two pairs of stationary robots
 
 # Add four robots on opposing corners
 ADDR 0 5 6 rob1
