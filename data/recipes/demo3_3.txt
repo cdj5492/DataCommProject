@@ -9,7 +9,7 @@ WAIT 18
 PAUSE
 
 # Delay before robot requests network shape
-WAIT 20
+WAIT 16
 PAUSE
 
 WAIT 70

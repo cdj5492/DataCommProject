@@ -12,6 +12,7 @@ successful transmission and update the dropped packet diagnostics on its own.
 import dataclasses
 import queue
 import typing
+import sys
 
 from .faces import Faces, Direction
 
@@ -24,6 +25,8 @@ class NodeDiagnostics:
     num_pkts_received_this_cycle : int = 0
     num_pkts_dropped : int = 0
     num_pkts_dropped_this_cycle : int = 0
+    max_mem : int = 0
+    total_cycle_mem : int = 0
     current_q_len : int = 0
     highest_q_len : int = 0
     is_robot : bool = False
@@ -34,6 +37,8 @@ class NodeDiagnostics:
         self.num_pkts_sent_this_cycle = 0
         self.num_pkts_received_this_cycle = 0
         self.num_pkts_dropped_this_cycle = 0
+        self.max_mem = 0
+        self.total_cycle_mem = 0
 
 
     def get_num_pkts_sent(self) -> int:
@@ -171,6 +176,10 @@ class RoutingCube:
         self._stats.reset_cycle_dependent_stats()
         # Perform routing actions
         routing_algorithm.route(self)
+        
+        mem = sys.getsizeof(self.data)
+        self._stats.total_cycle_mem += mem
+        self._stats.max_mem = max(self._stats.max_mem, mem)
     
     def flush_buffers(self):
         # Receive packets on all faces and place in queue
