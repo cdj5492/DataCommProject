@@ -35,6 +35,7 @@ class RWRoute(RoutingAlgorithm):
         if packet is not None:
             print(packet)
             if cube.id == packet.dest_addr:
+                cube.notify_correctly_routed_pkt()
                 return
             #for d in list(Direction):
              #   if(cube.connected_in_direction(d) is False):
