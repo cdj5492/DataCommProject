@@ -1,3 +1,7 @@
+"""
+[MD] 4/22/24 Added RobotAlgorithm.send_packet().
+"""
+
 from network.routing_cube import RoutingCube
 from network.robot import Robot
 
@@ -13,6 +17,10 @@ class RobotAlgorithm:
     # Called once when this robot is first powered on (connected to the network)
     def power_on(self, robot: Robot) -> None:
         pass
+
+    def send_packet(self, robot:Robot, dest_addr, data) -> None:
+        pass
+
 
     def send_packet(self, robot:Robot, dest_addr, data) -> None:
         pass

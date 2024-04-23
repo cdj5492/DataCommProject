@@ -12,12 +12,16 @@ classes here and add an entry to the NODE_COLOR_CONFS dictionary with a unique n
 
 from gui.color_conf import CONF_NUM_PKTS_RECEIVED, CONF_ANY_PKTS_DROPPED, CONF_PKT_FLOW
 from routing_algorithms.bellmanford import BellmanFordRouting, BellmanFordRobot
+from routing_algorithms.route_planning import NetNodeRouting, RoutePlanningRobot
 import routing_algorithms.template as routet
 import robot_algorithm.template as robt
+from routing_algorithms.randomwalk import RWRobot, RWRoute
 
 ROUTING_ALGOS = {
     "template" : (routet.Template, robt.Template),
     "bmf" : (BellmanFordRouting, BellmanFordRobot),
+    "rp" : (NetNodeRouting, RoutePlanningRobot),
+    "rw" : (RWRoute, RWRobot),
 }
 """All supported routing algorithms. Values are RoutingAlgorithm, RobotAlgorithm tuples."""
 
