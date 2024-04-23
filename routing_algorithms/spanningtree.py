@@ -174,6 +174,7 @@ class SpanningTreeRouting(RoutingAlgorithm):
 
         if(cube.id == self.root_id and cube.data.broadcast_count == 30):
             brod_pkt = MSTBroadcast()
+            cube.data.isVisited == False
             if(cube.connected_in_direction(d) is True):
                 cube.send_packet(d, brod_pkt.copy())   
 
