@@ -210,9 +210,9 @@ class NetNodeRouting(RoutingAlgorithm):
                     case Direction.EAST:
                         cube.data.position = (neighbor_pos[0] - 1, neighbor_pos[1], neighbor_pos[2])
                     case Direction.NORTH:
-                        cube.data.position = (neighbor_pos[0], neighbor_pos[1] + 1, neighbor_pos[2])
-                    case Direction.SOUTH:
                         cube.data.position = (neighbor_pos[0], neighbor_pos[1] - 1, neighbor_pos[2])
+                    case Direction.SOUTH:
+                        cube.data.position = (neighbor_pos[0], neighbor_pos[1] + 1, neighbor_pos[2])
                     case _: # default case
                         pass
                 cube.data.position_known = True
@@ -446,7 +446,7 @@ class RoutePlanningRobot(RobotAlgorithm):
         robot.data = RobotData()
     
     def send_packet(self, robot: Robot, dest_addr: node_addr_t, data: typing.Any):
-        if dest_addr not in self.robot.data.node_addr_lookup.keys():
+        if dest_addr not in robot.data.node_addr_lookup.keys():
             print(f"Robot {robot.data.id} could not find destination node {dest_addr}")
             return
         # print out graph
