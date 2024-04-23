@@ -99,6 +99,7 @@ class NetworkShapeResponsePkt:
 @dataclasses.dataclass
 class DataPacket:
     data: typing.Any = None
+    src_addr: node_addr_t = ''
     dest_addr: node_addr_t = ''
     path_to_take: Path = Path([])
 
@@ -148,6 +149,7 @@ class Graph:
 class RobotData:
     id: int = 0
     tmp: int = 0
+    num_requests: int = 0
     network_graph: Graph = Graph()
     node_addr_lookup: dict[node_addr_t, node_pos_t] = dataclasses.field(default_factory=dict)
 
@@ -263,10 +265,19 @@ class NetNodeRouting(RoutingAlgorithm):
                     cube.notify_correctly_routed_pkt()
 
                 next_direction = packet[0].path_to_take.next()
-                if next_direction is not None:
+                if packet[0].path_to_take.reversed:
+                    next_direction = reverse_direction(next_direction)
+                if next_direction is not None and cube.connected_in_direction(next_direction):
+                    print(f"Sending packet in direction {next_direction}")
                     cube.send_packet(next_direction, packet[0])
-                else:
-                    print(f"Packet {packet[0]} dropped")
+                elif not packet[0].path_to_take.reversed:
+                    print(f"Packet {packet[0]} could not make it to destination. Sending back")
+                    # send packet back to source
+                    packet[0].path_to_take.reversed = True
+                    packet[0].path_to_take.path_pos -= 2
+                    next_direction = packet[0].path_to_take.next()
+                    next_direction = reverse_direction(next_direction)
+                    cube.send_packet(next_direction, packet[0])
                 
 
     def power_on(self, cube: RoutingCube):
@@ -392,7 +403,7 @@ class RoutePlanningRobot(RobotAlgorithm):
     def step(self, robot: Robot) -> RoutingCube:
         # hardcode determine shape of network. Not a great way of doing it, but it works
         if robot.data.tmp == 40:
-            self.request_network_shape(robot, robot.cube.id)
+            self.request_network_shape(robot, robot.cube.id + str(robot.data.num_requests))
             # print(f"Request with ID {robot.cube.id} sent")
 
         incoming_packets = []
@@ -412,6 +423,17 @@ class RoutePlanningRobot(RobotAlgorithm):
                 robot.data.node_addr_lookup[packet[0].node_name] = packet[0].node_position
                 
                 # print(f"added node {packet[0].node_name} at {packet[0].node_position}")
+            # elif isinstance(packet[0], DataPacket) and packet[0].dest_addr == robot.cube.id and packet[0].path_to_take.reversed:
+            elif isinstance(packet[0], DataPacket):
+                print("got here1")
+                if packet[0].src_addr == robot.cube.id:
+                    print("got here2")
+                    robot.cube.notify_correctly_routed_pkt()
+                    if packet[0].path_to_take.reversed:
+                        print("got here3")
+                        print(f"Robot {robot.data.id} detected removed node. Requesting network shape")
+                        print(f"Robot {robot.data.id} received data packet: {packet[0].data}")
+                        self.request_network_shape(robot, robot.cube.id)
             else:
                 # add it back into the queue for processing by the internal routing cube
                 robot.cube.add_packet_internal(packet[0], packet[1])
@@ -424,6 +446,9 @@ class RoutePlanningRobot(RobotAlgorithm):
         robot.data = RobotData()
     
     def send_packet(self, robot: Robot, dest_addr: node_addr_t, data: typing.Any):
+        if dest_addr not in self.robot.data.node_addr_lookup.keys():
+            print(f"Robot {robot.data.id} could not find destination node {dest_addr}")
+            return
         # print out graph
         # print(robot.data.network_graph.graph)
         nodePath = self.dijkstra(robot, dest_addr)
@@ -432,5 +457,5 @@ class RoutePlanningRobot(RobotAlgorithm):
         # print(f"Robot {robot.data.id} path: {path}")
             
         # build and send 
-        packet = DataPacket(data, dest_addr, path)
+        packet = DataPacket(data, robot.cube.id, dest_addr, path)
         robot.cube.send_packet(path.next(), packet)
