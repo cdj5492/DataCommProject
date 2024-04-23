@@ -7,23 +7,49 @@ This contains a class which encapsulates a NetworkGrid object with the functions
 for any network simulator Model.
 """
 
-import numpy as np
+import typing
 
-from gui.utils import Model
-
+from app.support import NODE_COLOR_CONFS, VALID_COLOR_CONFS
+from gui.utils import NodeUIData, Model, ColorConf, ColorConfGroup
 from network.network_grid import NetworkGrid
-from network.robot import Robot
-from network.routing_cube import RoutingCube
-from network.sim.recipe import Recipe
-
-COLOR_RED = "red"
-COLOR_BLUE = "blue"
-COLOR_GREEN = "green"
+from network.routing_cube import NodeDiagnostics, RoutingCube
+from network.recipe import Recipe
 
 
-def _node_is_robot(node:RoutingCube, robots:list[Robot]) -> bool:
-    # TODO this should probably be a method of NetworkGrid
-    return any([bot.cube.position == node.position for bot in robots])
+class RoutingCubeUIData(NodeUIData):
+    """
+    Node UI data type for extracting GUI data from RoutingCube objects.
+
+    Requires that any color configurations used have the function signature given by
+    COLOR_CONF_EVAL_FUNC.
+    """
+    
+    COLOR_CONF_EVAL_FUNC: typing.TypeAlias = typing.Callable[[NodeDiagnostics], typing.Any]
+    """Color configurations used by this class must take a NodeDiagnostics argument."""
+
+
+    def __init__(self, cube:RoutingCube, color_conf:ColorConf|ColorConfGroup):
+        """
+        Create new routing cube UI data.
+
+        :param cube: RoutingCube
+        :param color_conf: color configuration or color configuration group to use for
+                           determining the face color of this node for the GUI
+        """
+        super().__init__(cube.position)
+        self.diagnostics = cube.stats
+        self.color_conf = color_conf
+    
+
+    def facecolor(self) -> tuple[float,float,float,float]:
+        """
+        Applies the color configuration to determine the face color this node should have
+        in the GUI.
+
+        :return: tuple of RGBA color values
+        """
+        colors = self.color_conf(self.diagnostics)
+        return colors.vals()
 
 
 class NetGridPresenter(Model):
@@ -42,36 +68,30 @@ class NetGridPresenter(Model):
         self.netgrid = netgrid
         self.dimensions = dimensions
         self.recipe = recipe
+        self.cycle_num = 0
+        self.netgrid.update_net_stats()
         super().__init__()
 
-    
-    def get_node_positions(self) -> np.ndarray[int]:
-        node_map = self.netgrid.node_map
-        nodes = np.zeros(self.dimensions, dtype=int)
-        
-        for x, y, z in node_map.keys():
-            nodes[x,y,z] = 1
 
-        return nodes
-    
+    def get_network_dimensions(self) -> tuple[int, int, int]:
+        return self.dimensions
 
-    def get_node_facecolors(self) -> np.ndarray[str]:
+
+    def get_node_voxeldata(self, mode:str) -> list[RoutingCubeUIData]:
         """
-        Nodes containing packets are colored red. Nodes representing robot connection
-        points are colored green. All other nodes are blue.
+        Creates and returns RoutingCubeUIData for each node in the network grid.
+
+        :param mode: color mode (color configuration) to use
+        :raises ValueError: if mode is not a valid color mode
+        :return: list of RoutingCubeUIData for all nodes in the network
         """
-        node_map = self.netgrid.node_map
-        node_facecolors = np.zeros(self.dimensions, dtype=str)
+        if mode not in VALID_COLOR_CONFS:
+            raise ValueError(f"Invalid node color configuration '{mode}'")
 
-        for (x,y,z), node in node_map.items():
-            if node.has_packet():
-                node_facecolors[x,y,z] = COLOR_RED
-            elif _node_is_robot(node, self.netgrid.robot_list):
-                node_facecolors[x,y,z] = COLOR_GREEN
-            else:
-                node_facecolors[x,y,z] = COLOR_BLUE 
+        nodes = self.netgrid.node_list
+        color_conf = NODE_COLOR_CONFS[mode]
 
-        return node_facecolors
+        return [RoutingCubeUIData(node, color_conf) for node in nodes]
 
 
     def next_state(self):
@@ -86,33 +106,59 @@ class NetGridPresenter(Model):
             self.recipe.execute_next(self.netgrid)
         # Step network grid and update observers
         self.netgrid.step()
+        self.cycle_num += 1
         self.alert_observers()
 
 
-    def prev_state(self):
-        # TODO Currently no way to access previous state
-        pass
-
-
     def restart(self):
-        # TODO Currently no way to reset to initial state
+        """
+        This method is unused because the GUI handles restarting.
+        """
         pass
 
 
-    def run(self):
+    def run(self, num_cycles:int=-1, ignore_pauses:bool=False):
         """
-        Repeatedly steps to the next state until the internal recipe is finished running.
+        Repeatedly steps to the next state until the internal recipe is finished running
+        or becomes paused. Alternatively, a specific number of recipe cycles can be run.
         Does nothing if there is no recipe.
 
-        WARNING: This function will block forever if the recipe has an infinite loop.
+        WARNING: This function may block forever if the recipe has an infinite loop with
+        no pauses and num_cycles < 0.
+
+        :param num_cycles: maximum number of cycles to run; may be negative to run with
+                           no maximum
+        :param ignore_pauses: set this to skip over pause commands while running
         """
-        # TODO Add more sophisticated diagnostics
         if self.recipe is not None:
             # Resume recipe if paused
             self.recipe.resume()
-            # Execute recipe cycles and step network grid until paused
-            while self.recipe.is_running():
+
+            # Execute recipe instruction and step network grid each cycle
+            while not self.recipe.paused and num_cycles != 0:
+                self.cycle_num += 1
                 self.recipe.execute_next(self.netgrid)
                 self.netgrid.step()
-            # Update observers with resulting state
+
+                # Automatically resume a paused recipe if pauses are ignored
+                if ignore_pauses:
+                    self.recipe.resume()
+
+                # Decrement the number of cycles (will never cause the loop to exit if num_cycles < 0)    
+                num_cycles -= 1            
+
+            # Update observers with resulting end state
             self.alert_observers()
+
+    
+    def add_node(self, x:int, y:int, z:int, robot:bool=False):
+        if robot:
+            self.netgrid.add_robot(x, y, z)
+        else:
+            self.netgrid.add_node(x, y, z)
+        self.alert_observers()
+
+
+    def remove_node(self, x:int, y:int, z:int):
+        self.netgrid.remove_node(x, y, z)
+        self.alert_observers()

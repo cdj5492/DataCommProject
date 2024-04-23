@@ -6,29 +6,18 @@ author: Mark Danza
 Initializes and runs the network simulator and matplotlib GUI.
 
 Example execution:
-$ python app.py bmf -n data/networks/net1.txt -r data/recipes/net1_1.txt -s 3
+$ python app.py bmf -n data/networks/net1.txt -r data/recipes/net1_1.txt -c pkt-flow
 """
 
 import argparse
-import os
 import sys
 
 import matplotlib.pyplot as plt
 
+from app.initialization import init_presenter
+from app.support import VALID_ROUTING_ALGOS, VALID_COLOR_CONFS
 from gui.gui import PlotGUI
-from gui.netgrid_model import NetGridPresenter
-from network.network_grid import NetworkGrid
-from network.sim.file import init_routingcubes_from_file
-from network.sim.recipe import Recipe
-from routing_algorithms.bellmanford import BellmanFordRouting, BellmanFordRobot
-import routing_algorithms.template as routet
-import robot_algorithm.template as robt
-
-
-routing_algos = {
-    "template" : (routet.Template, robt.Template),
-    "bmf" : (BellmanFordRouting, BellmanFordRobot),
-}
+from network.routing_cube import RoutingCube
 
 
 def _get_argparser() -> argparse.ArgumentParser:
@@ -37,8 +26,8 @@ def _get_argparser() -> argparse.ArgumentParser:
         "algorithm",
         default="template",
         type=str,
-        choices=list(routing_algos.keys()),
-        help="Routing algorithm to use"
+        choices=VALID_ROUTING_ALGOS,
+        help="Routing algorithm to use."
     )
     parser.add_argument(
         "--network", "--net", "-n",
@@ -56,38 +45,25 @@ def _get_argparser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--size", "-s",
-        default=10,
+        default=0,
         type=int,
         required=False,
         help="Network size, which is used to determine the maximum coordinates displayed."
     )
+    parser.add_argument(
+        "--colormode", "-c",
+        default="pkt-flow",
+        type=str,
+        choices=VALID_COLOR_CONFS,
+        help="Display color mode to use."
+    )
+    parser.add_argument(
+        "--queuesize", "-q",
+        default=RoutingCube.MAX_Q_LEN,
+        type=int,
+        help="Maximum queue size for nodes."
+    )
     return parser
-
-
-def init_simulator(routing_algo_name:str, net_file_path:os.PathLike|None=None) -> NetworkGrid:
-    """
-    Initialize a NetworkGrid and populate it with the nodes specified in the given
-    network file.
-
-    :param routing_algo_name: string identifier of routing algorithm to use
-    :param net_file_path: optional path to file containing network node information
-    :return: network simulator object
-    """
-    # Instantiate routing and robot algorithm classes
-    routing_alg_t, robo_alg_t = routing_algos[routing_algo_name]
-    routing_alg, robo_alg = routing_alg_t(), robo_alg_t()
-
-    # Main grid
-    grid = NetworkGrid(routing_alg, robo_alg)
-
-    if net_file_path is not None:
-        # Add nodes to the grid
-        cubes = init_routingcubes_from_file(net_file_path)
-        for cube in cubes:
-            x, y, z = cube.position
-            grid.add_node(x, y, z, cube)
-
-    return grid
 
 
 def main(argv):
@@ -95,19 +71,15 @@ def main(argv):
     parser = _get_argparser()
     cliargs = parser.parse_args(argv)
 
-    # Initialization
-    simulator = init_simulator(cliargs.algorithm, cliargs.network)
-    if cliargs.recipe is not None:
-        recipe = Recipe.from_file(cliargs.recipe)
-    else:
-        recipe = None
+    # Set maximum node queue size
+    RoutingCube.MAX_Q_LEN = cliargs.queuesize
 
-    universe_dimensions = (cliargs.size, cliargs.size, cliargs.size)
-
-    model = NetGridPresenter(simulator, universe_dimensions, recipe)
-    ui = PlotGUI(universe_dimensions, model)
+    # GUI frontend initialization
+    model = init_presenter(cliargs.algorithm, cliargs.network, cliargs.recipe, cliargs.size)
+    ui = PlotGUI(model, cliargs.colormode, cliargs.algorithm, cliargs.network, cliargs.recipe)
     model.add_observer(ui)
 
+    # Give control to matplotlib
     plt.show()
 
 

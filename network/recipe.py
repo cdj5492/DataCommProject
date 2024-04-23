@@ -234,6 +234,8 @@ class Recipe:
             id = None
         else:
             x, y, z, id = args
+        
+        print(f"Adding node at ({x},{y},{z}) with ID {id}")
         netgrid.add_node(x, y, z, id)
 
 
@@ -250,6 +252,7 @@ class Recipe:
             id = None
         else:
             x, y, z, id = args
+        
         netgrid.add_robot(x, y, z, id)
 
 
@@ -425,6 +428,22 @@ class Recipe:
         Unpauses the recipe if it is paused. Has no effect if the recipe is running.
         """
         self.paused = False
+
+
+    def peek_next_comm(self) -> str|None:
+        """
+        Helper method for generating a string version of the next recipe command and its
+        arguments.
+
+        :return: string representation of next command, or None if there is no next
+        command
+        """
+        if self.length > self.idx:
+            comm, args = self.commands[self.idx], self.command_args[self.idx]
+            strs = [comm.name] + [str(arg) for arg in args]
+            return ' '.join(strs)
+        else:
+            return None
 
 
     def __str__(self) -> str:

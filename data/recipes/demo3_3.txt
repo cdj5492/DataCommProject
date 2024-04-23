@@ -1,0 +1,27 @@
+# Demo network 3 recipe - Moving a robot after a packet transmission
+
+# Add two robots
+ADDR 0 5 6 rob1
+ADDR 6 5 0 robA
+
+# Delay for nodes to figure out their positions
+WAIT 18
+PAUSE
+
+# Delay before robot requests network shape
+WAIT 16
+PAUSE
+
+WAIT 70
+PAUSE
+
+# Send a packet and remove the destination robot
+LOOP -1
+SEND 99 robA rob1
+WAIT 20
+PAUSE
+
+SEND 99 rob1 robA
+WAIT 30
+PAUSE
+ENDL

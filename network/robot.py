@@ -1,6 +1,7 @@
 """
 [MD] 4/11/24 Removed direction argument from Robot.get_packet() to support single-queue
 RoutingCube implementation. Removed newly obsolete method Robot.get_any_packet().
+[MD] 4/14/24 Small modification to support RoutingCubes with NodeDiagnostics.
 """
 
 import typing
@@ -12,6 +13,8 @@ from .faces import Direction
 class Robot:
     def __init__(self, cube: RoutingCube) -> None:
         self.cube = cube
+        self.cube.stats.is_robot = True
+        self.data = None
         
     def send_packet(self, direction: Direction, packet):
         return self.cube.send_packet(direction, packet)

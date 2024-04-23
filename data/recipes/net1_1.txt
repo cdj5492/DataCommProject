@@ -1,7 +1,11 @@
 # Example Recipe File
 
 # Add robot node
-ADDR 0 1 0
+
+
+# Delay for initialization
+WAIT 15
+PAUSE
 
 # Send and wait for a packet in a loop (loop executes a total of 2+1 = 3 times)
 LOOP 2
