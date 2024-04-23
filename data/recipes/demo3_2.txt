@@ -1,5 +1,9 @@
 # Demo network 3 recipe - Moving a robot after a packet transmission
 
+# Delay for initialization
+WAIT 330
+PAUSE
+
 # Add two robots
 ADDR 0 5 6 rob1
 ADDR 6 5 0 robA
